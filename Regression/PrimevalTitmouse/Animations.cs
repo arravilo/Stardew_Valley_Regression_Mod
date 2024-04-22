@@ -30,8 +30,8 @@ namespace PrimevalTitmouse
     {
         //<FIXME> Adding Leo here as a quick fix to a softlock issue due to not having ABDL dialogue written
         private static readonly List<string> NPC_LIST = new List<string> { "Linus", "Krobus", "Dwarf", "Leo" };
-        public static readonly int poopAnimationTime = 2000; //ms
-        public static readonly int peeAnimationTime = 2000; //ms
+        public static readonly int poopAnimationTime = 1200; //ms
+        public static readonly int peeAnimationTime = 600; //ms
         //Magic Constants
         public const string SPRITES = "Assets/sprites.png";
         public const int PAUSE_TIME = 20000;
@@ -281,11 +281,6 @@ namespace PrimevalTitmouse
                 Animations.Say(Animations.GetData().Poop_Toilet_Attempt, b);
             else
                 Animations.Say(Animations.GetData().Poop_Attempt, b);
-        }
-
-        public static void AnimateStillSoiled(Body b)
-        {
-            Animations.Say(Strings.ReplaceAndOr(Strings.RandString(Animations.GetData().Still_Soiled), (double)b.underwear.wetness > 0.0, (double)b.underwear.messiness > 0.0, "&"), b);
         }
 
         public static void AnimateWashingUnderwear(Container c)

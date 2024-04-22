@@ -45,7 +45,6 @@ namespace PrimevalTitmouse
         public string[] Poop_Toilet_Attempt;
         public string[] Poop_Voluntary;
         public string[] Spot_Washing_Bedding;
-        public string[] Still_Soiled;
         public string[] Toilet_Night;
         public string Underwear_Clean;
         public string Underwear_Drying;
