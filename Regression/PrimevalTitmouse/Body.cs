@@ -121,7 +121,7 @@ namespace PrimevalTitmouse
             //Did we go over? Then have an accident.
             if (bladderFullness >= GetBladderCapacity())
             {
-                Wet(voluntary: false, inUnderwear: true);
+                WetIntoUnderwear(false);
                 //Otherwise, calculate the new value
             } else {
                 float newFullness = bladderFullness / maxBladderCapacity;
@@ -370,9 +370,9 @@ namespace PrimevalTitmouse
             Animations.AnimateDrinking(true);
         }
 
-        public bool InToilet(bool inUnderwear)
+        public bool InToilet()
         {
-            return !inUnderwear && (Game1.currentLocation is FarmHouse || Game1.currentLocation is JojaMart || Game1.currentLocation is Club || Game1.currentLocation is MovieTheater || Game1.currentLocation is IslandFarmHouse || Game1.currentLocation.Name == "Saloon" || Game1.currentLocation.Name == "Hospital" || Game1.currentLocation.Name == "BathHouse_MensLocker" || Game1.currentLocation.Name == "BathHouse_WomensLocker");
+            return Game1.currentLocation is FarmHouse || Game1.currentLocation is JojaMart || Game1.currentLocation is Club || Game1.currentLocation is MovieTheater || Game1.currentLocation is IslandFarmHouse || Game1.currentLocation.Name == "Saloon" || Game1.currentLocation.Name == "Hospital" || Game1.currentLocation.Name == "BathHouse_MensLocker" || Game1.currentLocation.Name == "BathHouse_WomensLocker";
         }
 
         public void Mess(bool voluntary = false, bool inUnderwear = true)
@@ -458,8 +458,16 @@ namespace PrimevalTitmouse
             }
 
             Animations.AnimateMessingEnd(this);
-            if (!this.InToilet(inUnderwear))
-                _ = Animations.HandleVillager(this, true, inUnderwear, pants.messiness > 0.0, false, 20, 3);
+            if (!this.InToilet())
+            {
+                if (inUnderwear)
+                {
+                    Animations.HandleVillagersInUnderwear(this, true, pants.messiness > 0.0);
+                }else
+                {
+                    Animations.HandleVillagersInPublic(this, true);
+                }
+            }
             if (pants.messiness > 0.0 && inUnderwear)
             {
                 HandlePoopOverflow();
@@ -487,34 +495,6 @@ namespace PrimevalTitmouse
             Game1.player.applyBuff(buff);
         }
 
-        public void StartWetting(bool voluntary = false, bool inUnderwear = true)
-        {
-
-            if ((double)bladderFullness < GetBladderAttemptThreshold())
-            {
-                Animations.AnimatePeeAttempt(this, inUnderwear);
-            }
-            else
-            {
-                //If we have an accident (not voluntary), decrease continence
-                //If we use the potty before we REALLY have to go (we go before we reach some threshold), increase continence
-                //Otherwise, if it is voluntary but waited until we almost had an accident (fullness above some threshold) don't change anything
-                if (!voluntary)
-                    this.ChangeBladderContinence(0.01f * Regression.config.BladderLossContinenceRate);
-                else
-                {
-                    float bladderPct = bladderFullness / GetBladderCapacity();
-                    this.ChangeBladderContinence(-0.02f * bladderPct * Regression.config.BladderGainContinenceRate);
-                }
-                Animations.AnimateWettingStart(this, voluntary, inUnderwear);
-            }
-
-            Animations.AnimateWettingEnd(this);
-            if (!this.InToilet(inUnderwear))
-                _ = Animations.HandleVillager(this, false, inUnderwear, pants.wetness > 0.0, false, 20, 3);
-            if (pants.wetness > 0.0 && inUnderwear)
-                HandlePeeOverflow();
-        }
         private void HandlePeeOverflow()
         {
             if (isSleeping)
@@ -538,62 +518,114 @@ namespace PrimevalTitmouse
             Game1.player.applyBuff(buff);
         }
 
-        public void Wet(bool voluntary = false, bool inUnderwear = true)
+
+        private void WetIntoUnderwear(bool voluntary)
         {
             if (!Regression.config.Wetting)
                 return;
 
-            numPottyPeeAtNight = 0;
-            numAccidentPeeAtNight = 0;
-            //If we're sleeping check if we have an accident or get up to use the potty
-            if (isSleeping)
-            {
-                //When we're sleeping, our bladder fullness can exceed our capacity since we calculate for the whole night at once
-                //Hehehe, this may be evil, but with a smaller bladder, you'll have to pee multiple times a night
-                //So roll the dice each time >:)
-                int numWettings = (int)(bladderFullness / GetBladderCapacity());
-                int numAccidents = 0;
-                int numPotty = 0;
+            if (isSleeping) {
+                PeeWhileSleep();
+                return;
+            }
 
-                for (int i = 0; i < numWettings; i++)
-                {
-                    //Randomly decide if we get up. Less likely if we have lower continence
-                    bool lclVoluntary = voluntary || Regression.rnd.NextDouble() < (double)this.bladderContinence;
-                    float amountToLose = GetBladderCapacity();
-                    if (!lclVoluntary)
-                    {
-                        numAccidents++;
-                        //Any overage in the container, add to the pants. Ignore overage over that.
-                        //When sleeping, the pants are actually the bed
-                        _ = this.bed.AddPee(this.pants.AddPee(this.underwear.AddPee(amountToLose)));
-                        bladderFullness -= amountToLose;
-                    }
-                    else
-                    {
-                        numPotty++;
-                        bladderFullness -= amountToLose;
-                        if (!underwear.removable) //Certain underwear can't be taken off to use the toilet (ie diapers)
-                        {
-                            _ = this.bed.AddPee(this.pants.AddPee(this.underwear.AddPee(amountToLose)));
-                            numAccidents++;
-                        }
-                    }
-                }
-                numPottyPeeAtNight = numPotty;
-                numAccidentPeeAtNight = numAccidents;
-            } else
+            /* - Wearing a non-removable underwear will have you go in it, and not win any continence.
+             * voluntary => without loss of continence 
+             * !voluntary => without loss of continence
+             */
+            if (!voluntary)
+                this.ChangeBladderContinence(0.01f * Regression.config.BladderLossContinenceRate);
+
+            Animations.AnimateWetting(this, voluntary);
+
+            this.pants.AddPee(this.underwear.AddPee(bladderFullness));
+            bool overflow = pants.wetness > 0.0;
+            Animations.HandleVillagersInUnderwear(this, false, overflow);
+            if (overflow)
+                HandlePeeOverflow();
+
+            this.bladderFullness = 0.0f;
+            Regression.monitor.Log(string.Format("bladderFullnes after wet {0}", bladderFullness));
+        }
+
+        private void PeeWhileSleep()
+        {
+            //When we're sleeping, our bladder fullness can exceed our capacity since we calculate for the whole night at once
+            //Hehehe, this may be evil, but with a smaller bladder, you'll have to pee multiple times a night
+            //So roll the dice each time >:)
+            int numWettings = (int)(bladderFullness / GetBladderCapacity());
+            int numAccidents = 0;
+            int numPotty = 0;
+
+            for (int i = 0; i < numWettings; i++)
             {
-                StartWetting(voluntary, inUnderwear);
-                if (bladderFullness >= GetBladderAttemptThreshold())
+                //Randomly decide if we get up. Less likely if we have lower continence
+                bool lclVoluntary = Regression.rnd.NextDouble() < (double)this.bladderContinence;
+                float amountToLose = GetBladderCapacity();
+                if (!lclVoluntary)
                 {
-                    if (inUnderwear)
+                    numAccidents++;
+                    //Any overage in the container, add to the pants. Ignore overage over that.
+                    //When sleeping, the pants are actually the bed
+                    _ = this.bed.AddPee(this.pants.AddPee(this.underwear.AddPee(amountToLose)));
+                    bladderFullness -= amountToLose;
+                }
+                else
+                {
+                    numPotty++;
+                    bladderFullness -= amountToLose;
+                    if (!underwear.removable) //Certain underwear can't be taken off to use the toilet (ie diapers)
                     {
-                        _ = this.pants.AddPee(this.underwear.AddPee(bladderFullness));
+                        _ = this.bed.AddPee(this.pants.AddPee(this.underwear.AddPee(amountToLose)));
+                        numAccidents++;
                     }
-                    this.bladderFullness = 0.0f;
                 }
             }
-            Regression.monitor.Log(string.Format("bladderFullnes after wet {0}", bladderFullness));
+            numPottyPeeAtNight = numPotty;
+            numAccidentPeeAtNight = numAccidents;
+        }
+
+        public void PeeOnPurpose()
+        {
+            if (!Regression.config.Wetting)
+                return;
+
+            // - Performing it too early, will show a message that you still can't pee/poop.
+            if (bladderFullness < GetBladderAttemptThreshold())
+            {
+                Animations.AnimatePeeAttempt(this, this.underwear);
+                return;
+            }
+
+            /* - Wearing a non-removable underwear will have you go in it, and not win any continence.
+             * voluntary
+             *   removable => win continence
+             *      toilet => {}
+             *      !toilet => everyone notices
+             *   !removable => into underwear, without loss of continence 
+             * !voluntary => into underwear, with loss of continence
+             */
+            if (!this.underwear.removable)
+            {
+                this.WetIntoUnderwear(true);
+                return;
+            }
+
+            /*
+             * - You will get continence back based on how close to full you are: The longer
+             *   you hold it, the more continence you win, but you risk on having an accident
+             *   and losing continence.
+             */
+            float bladderPct = bladderFullness / GetBladderCapacity();
+            this.ChangeBladderContinence(-0.02f * bladderPct * Regression.config.BladderGainContinenceRate);
+
+            Animations.AnimatePee(this);
+
+            // - If done outside those areas, it's like you do it in public, where others might notice.
+            if (!this.InToilet())
+                Animations.HandleVillagersInPublic(this, false);
+
+            this.bladderFullness = 0.0f;
         }
 
         public void HandleMorning()

@@ -289,14 +289,30 @@ namespace PrimevalTitmouse
             }
             else
             {
+                /**
+                 * Wet & mess commands / potty training
+                 * My idea is to handle this differently:
+                 * - Performing it too early, will show a message that you still can't pee/poop.
+                 * - Wearing a non-removable underwear will have you go in it, and not win any continence.
+                 * - You will get continence back based on how close to full you are: The longer
+                 *   you hold it, the more continence you win, but you risk on having an accident
+                 *   and losing continence.
+                 * - If done inside some specific buildings, it's like you do it on a toilet.
+                 * - If done outside those areas, it's like you do it in public, where others might notice.
+                 * - Others noticing makes lose relationship status
+                 * - Peeing or pooping outside, everyone on the screen can see it -> Wide area
+                 * - Leaking pee or poop, people around you will notice -> Medium area
+                 * - Pooping in underwear, people close to you will notice -> Adjacent area
+                 * - Peeing in underwear, no one will notice.
+                 */
                 switch (e.Button)
                 {
                     case SButton.F1:
-                            body.Wet(true, !e.IsDown(SButton.LeftShift));
-                            break;
+                        body.PeeOnPurpose();
+                        break;
                     case SButton.F2:
-                            body.Mess(true, !e.IsDown(SButton.LeftShift));
-                            break;
+                        body.Mess(true, false);
+                        break;
                     case SButton.F5:
                         Animations.CheckUnderwear(body);
                         break;
