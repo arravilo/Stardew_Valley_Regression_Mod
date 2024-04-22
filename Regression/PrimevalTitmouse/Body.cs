@@ -23,9 +23,9 @@ namespace PrimevalTitmouse
         private static readonly float minBladderCapacity = maxBladderCapacity * 0.20f;
         private static readonly float waterToBladderConversion = 0.225f;//Only ~1/4 water becomes pee, rest is sweat etc.
 
-        //Average # of poops per day varies wildly. Let's say about 1.5 per day.
+        //Average # of poops per day varies wildly. Let's say about 3 per day.
         private static readonly float foodToBowelConversion = 0.67f;
-        private static readonly float maxBowelCapacity = (requiredCaloriesPerDay*foodToBowelConversion) / 2f;
+        private static readonly float maxBowelCapacity = (requiredCaloriesPerDay*foodToBowelConversion) / 3f;
 
         //Setup Thresholds and messages
         private static readonly float[] WETTING_THRESHOLDS = { 0.15f, 0.4f, 0.6f };
@@ -116,7 +116,6 @@ namespace PrimevalTitmouse
             //This is determined by the amount of water you have in your system when you go to bed
             float oldFullness = bladderFullness / maxBladderCapacity;
             bladderFullness += amount;
-            Regression.monitor.Log(string.Format("AddBladder {0} -> {1} / {2}", amount, bladderFullness, maxBladderCapacity));
 
             //Did we go over? Then have an accident.
             if (bladderFullness >= GetBladderCapacity())
@@ -147,7 +146,6 @@ namespace PrimevalTitmouse
             //This is determined by the amount of ffod you have in your system when you go to bed
             float oldFullness = bowelFullness / maxBowelCapacity;
             bowelFullness += amount;
-            Regression.monitor.Log(string.Format("AddBowel {0} -> {1} / {2}", amount, bowelFullness, maxBowelCapacity));
 
             //Did we go over? Then have an accident.
             if (bowelFullness >= maxBowelCapacity)
@@ -397,9 +395,11 @@ namespace PrimevalTitmouse
             this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
             this.bowelFullness = 0.0f;
 
+            Regression.monitor.Log(string.Format("MessIntoUnderwear, underwear: {0}/{1}, pants: {2}", underwear.messiness, underwear.containment, pants.messiness));
+
             Animations.AnimateMessing(this, voluntary);
 
-            bool overflow = pants.wetness > 0.0;
+            bool overflow = pants.messiness > 0.0;
             Animations.HandleVillagersInUnderwear(this, true, overflow);
             if (overflow)
                 HandlePoopOverflow();
@@ -440,6 +440,8 @@ namespace PrimevalTitmouse
             }
             numPottyPooAtNight = numPotty;
             numAccidentPooAtNight = numAccidents;
+
+            Regression.monitor.Log(string.Format("PooWhileSleep, underwear: {0}/{1}, pants: {2}", underwear.messiness, underwear.containment, pants.messiness));
         }
 
         public void PoopOnPurpose()
@@ -474,7 +476,7 @@ namespace PrimevalTitmouse
              *   and losing continence.
              */
             float bowelPct = bowelFullness / GetBladderCapacity();
-            this.ChangeBladderContinence(-0.02f * bowelPct * Regression.config.BowelGainContinenceRate);
+            this.ChangeBowelContinence(-0.02f * bowelPct * Regression.config.BowelGainContinenceRate);
 
             Animations.AnimatePoo(this);
 
@@ -483,6 +485,8 @@ namespace PrimevalTitmouse
                 Animations.HandleVillagersInPublic(this, true);
 
             this.bowelFullness = 0.0f;
+
+            Regression.monitor.Log(string.Format("PoopOnPurpose, underwear: {0}/{1}, pants: {2}", underwear.messiness, underwear.containment, pants.messiness));
         }
 
         private void HandlePoopOverflow()
@@ -548,6 +552,8 @@ namespace PrimevalTitmouse
 
             this.pants.AddPee(this.underwear.AddPee(bladderFullness));
             this.bladderFullness = 0.0f;
+            Regression.monitor.Log(string.Format("WetIntoUnderwear, underwear: {0}/{1}, pants: {2}", underwear.wetness, underwear.absorbency, pants.wetness));
+
             Animations.AnimateWetting(this, voluntary);
 
             bool overflow = pants.wetness > 0.0;
@@ -591,6 +597,7 @@ namespace PrimevalTitmouse
             }
             numPottyPeeAtNight = numPotty;
             numAccidentPeeAtNight = numAccidents;
+            Regression.monitor.Log(string.Format("PeeWhileSleep, underwear: {0}/{1}, pants: {2}", underwear.wetness, underwear.absorbency, pants.wetness));
         }
 
         public void PeeOnPurpose()
@@ -634,6 +641,7 @@ namespace PrimevalTitmouse
                 Animations.HandleVillagersInPublic(this, false);
 
             this.bladderFullness = 0.0f;
+            Regression.monitor.Log(string.Format("PeeOnPurpose, underwear: {0}/{1}, pants: {2}", underwear.wetness, underwear.absorbency, pants.wetness));
         }
 
         public void HandleMorning()
