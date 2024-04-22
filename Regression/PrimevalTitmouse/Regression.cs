@@ -137,11 +137,6 @@ namespace PrimevalTitmouse
             }
 
             Animations.AnimateNight(body);
-            HandleMorning(sender, e);
-        }
-
-        private void HandleMorning(object Sender, DayStartedEventArgs e)
-        {
             body.HandleMorning();
         }
 

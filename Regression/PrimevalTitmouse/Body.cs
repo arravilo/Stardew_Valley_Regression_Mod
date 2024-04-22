@@ -26,7 +26,6 @@ namespace PrimevalTitmouse
         //Average # of poops per day varies wildly. Let's say about 1.5 per day.
         private static readonly float foodToBowelConversion = 0.67f;
         private static readonly float maxBowelCapacity = (requiredCaloriesPerDay*foodToBowelConversion) / 2f;
-        private static readonly float minBowelCapacity = maxBowelCapacity * 0.20f;
 
         //Setup Thresholds and messages
         private static readonly float[] WETTING_THRESHOLDS = { 0.15f, 0.4f, 0.6f };
@@ -47,10 +46,8 @@ namespace PrimevalTitmouse
 
         //Things that describe an individual
         public int bedtime = 0;
-        public float bladderCapacity = maxBladderCapacity;
         public float bladderContinence = 1f;
         public float bladderFullness = 0f;
-        public float bowelCapacity = maxBowelCapacity;
         public float bowelContinence = 1f;
         public float bowelFullness = 0f;
         public float hunger = 0f;
@@ -70,27 +67,21 @@ namespace PrimevalTitmouse
             bed = new("bed");
             pants = new("blue jeans");
             underwear = new("dinosaur undies");
-    }
+        }
 
-        public float GetBladderTrainingThreshold()
+        public float GetBladderCapacity()
         {
-            return bladderCapacity * 0.5f;
-         }
-
-        public float GetBowelTrainingThreshold()
-        {
-
-            return bowelCapacity * 0.5f;
+            return Math.Max(bladderContinence * maxBladderCapacity, minBladderCapacity);
         }
 
         public float GetBladderAttemptThreshold()
         {
-            return bladderCapacity * 0.1f;
+            return GetBladderCapacity() * 0.1f;
         }
 
         public float GetBowelAttemptThreshold()
         {
-                return bowelCapacity * 0.1f;
+            return maxBowelCapacity * 0.1f;
         }
 
         public float GetHungerPercent()
@@ -105,12 +96,12 @@ namespace PrimevalTitmouse
 
         public float GetBowelPercent()
         {
-            return bowelFullness / bowelCapacity;
+            return bowelFullness / maxBowelCapacity;
         }
 
         public float GetBladderPercent()
         {
-            return bladderFullness / bladderCapacity;
+            return bladderFullness / GetBladderCapacity();
         }
 
         //Change current bladder value and handle warning messages
@@ -125,16 +116,16 @@ namespace PrimevalTitmouse
             //This is determined by the amount of water you have in your system when you go to bed
             float oldFullness = bladderFullness / maxBladderCapacity;
             bladderFullness += amount;
-            float newFullness = bladderFullness / maxBladderCapacity;
+            Regression.monitor.Log(string.Format("AddBladder {0} -> {1} / {2}", amount, bladderFullness, maxBladderCapacity));
 
             //Did we go over? Then have an accident.
-            if (bladderFullness >= bladderCapacity)
+            if (bladderFullness >= GetBladderCapacity())
             {
                 Wet(voluntary: false, inUnderwear: true);
-                newFullness = bladderFullness / maxBladderCapacity;
                 //Otherwise, calculate the new value
-            } else
-            {
+            } else {
+                float newFullness = bladderFullness / maxBladderCapacity;
+
                 //If we have no room left, or randomly based on our current continence level warn about how badly we need to pee
                 if ((newFullness <= 0.0 ? 1.0 : bladderContinence / (4f * newFullness)) > Regression.rnd.NextDouble())
                 {
@@ -150,20 +141,23 @@ namespace PrimevalTitmouse
             if (!Regression.config.Messing)
                 return;
 
+
             //Increment the current amount
             //We allow bowels to go over-full, to simulate the possibility of multiple night messes
             //This is determined by the amount of ffod you have in your system when you go to bed
             float oldFullness = bowelFullness / maxBowelCapacity;
             bowelFullness += amount;
-            float newFullness = bowelFullness / maxBowelCapacity;
+            Regression.monitor.Log(string.Format("AddBowel {0} -> {1} / {2}", amount, bowelFullness, maxBowelCapacity));
 
             //Did we go over? Then have an accident.
-            if (bowelFullness >= bowelCapacity)
+            if (bowelFullness >= maxBowelCapacity)
             {
                 Mess(voluntary: false, inUnderwear: true);
             }
             else
             {
+                float newFullness = bowelFullness / maxBowelCapacity;
+
                 //If we have no room left, or randomly based on our current continence level warn about how badly we need to pee
                 if ((newFullness <= 0.0 ? 1.0 : bowelContinence / (4f * newFullness)) > Regression.rnd.NextDouble())
                 {
@@ -262,11 +256,7 @@ namespace PrimevalTitmouse
             //Put a ceiling at 100%, and  a floor at 5%
             bladderContinence = Math.Max(Math.Min(bladderContinence, 1f), 0.05f);
 
-            //Decrease our maximum capacity (bladder shrinks as we become incontinent)
-            bladderCapacity = bladderContinence * maxBladderCapacity;
-
-            //Ceiling at base value and floor at 25% base value
-            bladderCapacity = Math.Max(bladderCapacity, minBladderCapacity);
+            Regression.monitor.Log(string.Format("Change bladder continence {0} -> {1}", previousContinence, bladderContinence));
 
             //If we're increasing, no need to warn. (maybe we should tell people that they're regaining?)
             if (percent <= 0)
@@ -287,11 +277,7 @@ namespace PrimevalTitmouse
             //Put a ceiling at 100%, and  a floor at 5%
             bowelContinence = Math.Max(Math.Min(bowelContinence, 1f), 0.05f);
 
-            //Decrease our maximum capacity (bowel shrinks as we become incontinent)
-            bowelCapacity = bowelContinence * maxBowelCapacity;
-
-            //Ceiling at base value and floor at 25% base value
-            bowelCapacity = Math.Max(bowelCapacity, minBowelCapacity);
+            Regression.monitor.Log(string.Format("Change bowel continence {0} -> {1}", previousContinence, bowelContinence));
 
             //If we're increasing, no need to warn. (maybe we should tell people that they're regaining?)
             if (percent <= 0)
@@ -400,36 +386,29 @@ namespace PrimevalTitmouse
                 //Hehehe, this may be evil, but with a smaller bladder, you'll have to pee multiple times a night
                 //So roll the dice each time >:)
                 //<TODO>: Give stamina penalty every time you get up to go potty. Since you disrupted sleep.
-                int numMesses = (int)((bowelFullness - GetBowelAttemptThreshold()) / bowelCapacity);
-                float additionalAmount = bowelFullness - (numMesses * bowelCapacity);
+                int numMesses = (int)(bowelFullness / maxBowelCapacity);
                 int numAccidents = 0;
                 int numPotty = 0;
-
-                if (additionalAmount > 0)
-                    numMesses++;
 
                 for (int i = 0; i < numMesses; i++)
                 {
                     //Randomly decide if we get up. Less likely if we have lower continence
                     bool lclVoluntary = voluntary || Regression.rnd.NextDouble() < (double)this.bowelContinence;
-                    StartWetting(lclVoluntary && underwear.removable, true); //Always in underwear in bed
-                    float amountToLose = (i != numMesses - 1) ? bowelCapacity : additionalAmount;
                     if (!lclVoluntary)
                     {
                         numAccidents++;
                         //Any overage in the container, add to the pants. Ignore overage over that.
                         //When sleeping, the pants are actually the bed
-                        _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(amountToLose)));
-                        bowelFullness -= amountToLose;
-
+                        _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(maxBowelCapacity)));
+                        bowelFullness -= maxBowelCapacity;
                     }
                     else
                     {
                         numPotty++;
-                        bowelFullness -= amountToLose;
+                        bowelFullness -= maxBowelCapacity;
                         if (!underwear.removable) //Certain underwear can't be taken off to use the toilet (ie diapers)
                         {
-                            _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(amountToLose)));
+                            _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(maxBowelCapacity)));
                             numAccidents++;
                         }
                     }
@@ -437,29 +416,20 @@ namespace PrimevalTitmouse
                 numPottyPooAtNight = numPotty;
                 numAccidentPooAtNight = numAccidents;
             }
-            else if (inUnderwear)
+            else
             {
-
-                StartMessing(voluntary, true); //Always in underwear in bed
-                                               //Any overage in the container, add to the pants. Ignore overage over that.
-
+                StartMessing(voluntary, inUnderwear);
                 if (bowelFullness >= GetBowelAttemptThreshold())
                 {
-                    _ = this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
+                    if (inUnderwear)
+                    {
+                        _ = this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
+                    }
+                    Regression.monitor.Log("Messed, reset bowel to 0");
                     this.bowelFullness = 0.0f;
                 }
             }
-            else
-            {
-                StartMessing(voluntary, false);
-                if (underwear.removable)
-                {
-                    if (bowelFullness >= GetBowelAttemptThreshold())
-                    {
-                        this.bowelFullness = 0.0f;
-                    }
-                }
-            }
+            Regression.monitor.Log(string.Format("bladderFullnes after mess {0}", bowelFullness));
         }
 
         public void StartMessing(bool voluntary = false, bool inUnderwear = true)
@@ -479,8 +449,10 @@ namespace PrimevalTitmouse
                 //Otherwise, if it is voluntary but waited until we almost had an accident (fullness above some threshold) don't change anything
                 if (!voluntary)
                     this.ChangeBowelContinence(0.01f * Regression.config.BowelLossContinenceRate);
-                else if (bowelFullness < GetBowelTrainingThreshold())
-                    this.ChangeBowelContinence(-0.01f * Regression.config.BowelGainContinenceRate);
+                else {
+                    float bowelPct = bowelFullness / maxBowelCapacity;
+                    this.ChangeBowelContinence(-0.02f * bowelPct * Regression.config.BowelGainContinenceRate);
+                }
 
                 Animations.AnimateMessingStart(this, voluntary, inUnderwear);
             }
@@ -488,9 +460,10 @@ namespace PrimevalTitmouse
             Animations.AnimateMessingEnd(this);
             if (!this.InToilet(inUnderwear))
                 _ = Animations.HandleVillager(this, true, inUnderwear, pants.messiness > 0.0, false, 20, 3);
-            if (pants.messiness <= 0.0 || !inUnderwear)
-                return;
-            HandlePoopOverflow();
+            if (pants.messiness > 0.0 && inUnderwear)
+            {
+                HandlePoopOverflow();
+            }
         }
 
         private void HandlePoopOverflow()
@@ -528,17 +501,19 @@ namespace PrimevalTitmouse
                 //Otherwise, if it is voluntary but waited until we almost had an accident (fullness above some threshold) don't change anything
                 if (!voluntary)
                     this.ChangeBladderContinence(0.01f * Regression.config.BladderLossContinenceRate);
-                else if(bladderFullness < GetBladderTrainingThreshold())
-                    this.ChangeBladderContinence(-0.01f * Regression.config.BladderGainContinenceRate);
+                else
+                {
+                    float bladderPct = bladderFullness / GetBladderCapacity();
+                    this.ChangeBladderContinence(-0.02f * bladderPct * Regression.config.BladderGainContinenceRate);
+                }
                 Animations.AnimateWettingStart(this, voluntary, inUnderwear);
             }
 
             Animations.AnimateWettingEnd(this);
             if (!this.InToilet(inUnderwear))
                 _ = Animations.HandleVillager(this, false, inUnderwear, pants.wetness > 0.0, false, 20, 3);
-            if ((pants.wetness <= 0.0 || !inUnderwear))
-                return;
-            HandlePeeOverflow();
+            if (pants.wetness > 0.0 && inUnderwear)
+                HandlePeeOverflow();
         }
         private void HandlePeeOverflow()
         {
@@ -576,20 +551,15 @@ namespace PrimevalTitmouse
                 //When we're sleeping, our bladder fullness can exceed our capacity since we calculate for the whole night at once
                 //Hehehe, this may be evil, but with a smaller bladder, you'll have to pee multiple times a night
                 //So roll the dice each time >:)
-                int numWettings = (int)((bladderFullness - GetBladderAttemptThreshold()) / bladderCapacity);
-                float additionalAmount = bladderFullness - (numWettings * bladderCapacity);
+                int numWettings = (int)(bladderFullness / GetBladderCapacity());
                 int numAccidents = 0;
                 int numPotty = 0;
-
-                if (additionalAmount > 0)
-                    numWettings++;
 
                 for (int i = 0; i < numWettings; i++)
                 {
                     //Randomly decide if we get up. Less likely if we have lower continence
                     bool lclVoluntary = voluntary || Regression.rnd.NextDouble() < (double)this.bladderContinence;
-                    StartWetting(lclVoluntary && underwear.removable, true); //Always in underwear in bed
-                    float amountToLose = (i != numWettings - 1) ? bladderCapacity : additionalAmount;
+                    float amountToLose = GetBladderCapacity();
                     if (!lclVoluntary)
                     {
                         numAccidents++;
@@ -597,7 +567,6 @@ namespace PrimevalTitmouse
                         //When sleeping, the pants are actually the bed
                         _ = this.bed.AddPee(this.pants.AddPee(this.underwear.AddPee(amountToLose)));
                         bladderFullness -= amountToLose;
-
                     }
                     else
                     {
@@ -612,27 +581,19 @@ namespace PrimevalTitmouse
                 }
                 numPottyPeeAtNight = numPotty;
                 numAccidentPeeAtNight = numAccidents;
-            }
-            else if (inUnderwear)
-            {
-                StartWetting(voluntary, true);
-                //Any overage in the container, add to the pants. Ignore overage over that.
-                if (bladderFullness >= GetBladderAttemptThreshold())
-                {
-                    _ = this.pants.AddPee(this.underwear.AddPee(bladderFullness));
-                    this.bladderFullness = 0.0f;
-                }
             } else
             {
-                StartWetting(voluntary, false);
-                if (underwear.removable) {
-                    if (bladderFullness >= GetBladderAttemptThreshold())
+                StartWetting(voluntary, inUnderwear);
+                if (bladderFullness >= GetBladderAttemptThreshold())
+                {
+                    if (inUnderwear)
                     {
-                    this.bladderFullness = 0.0f;
+                        _ = this.pants.AddPee(this.underwear.AddPee(bladderFullness));
                     }
+                    this.bladderFullness = 0.0f;
                 }
             }
-            if (bladderFullness < 0) bladderFullness = 0;
+            Regression.monitor.Log(string.Format("bladderFullnes after wet {0}", bladderFullness));
         }
 
         public void HandleMorning()
