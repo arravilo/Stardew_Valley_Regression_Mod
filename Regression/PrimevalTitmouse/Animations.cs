@@ -421,8 +421,10 @@ namespace PrimevalTitmouse
 
         private static NPC getNearbyNPC(int radius)
         {
+            Regression.monitor.Log(string.Format("Find NPCs within a radius of {0}", radius));
             if (Utility.isThereAFarmerOrCharacterWithinDistance(((Character)Animations.GetWho()).Tile, radius, (GameLocation)Game1.currentLocation) is not NPC npc || NPC_LIST.Contains(npc.Name))
                 return null;
+            Regression.monitor.Log(string.Format("Found {0}", npc.Name));
             return npc;
         }
 
