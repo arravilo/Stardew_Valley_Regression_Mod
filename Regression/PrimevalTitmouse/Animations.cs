@@ -109,51 +109,56 @@ namespace PrimevalTitmouse
             Write(Animations.GetData().Bedding_Still_Wet, b);
         }
 
-
-        public static void AnimateMessingStart(Body b, bool voluntary, bool inUnderwear)
+        public static void AnimateMessing(Body b, bool voluntary)
         {
-
             if (b.IsFishing() || !Animations.GetWho().canMove) return;
 
-            if (b.underwear.removable || inUnderwear)
-                Game1.playSound("slosh");
+            Game1.playSound("slosh");
 
-            if (b.isSleeping || !voluntary && !Regression.config.AlwaysNoticeAccidents && (double)b.bowelContinence + 0.449999988079071 <= Regression.rnd.NextDouble())
-                return;
-
-            if (!(b.underwear.removable || inUnderwear))
+            if ((double)b.pants.messiness > (double)b.pants.containment)
             {
-                Animations.Say(Animations.GetData().Cant_Remove, b);
-                return;
+                MessTerrain();
             }
 
-            if (!inUnderwear)
-            {
-                if (b.InToilet())
-                    Say(Animations.GetData().Poop_Toilet, b);
-                else
-                    Say(Animations.GetData().Poop_Voluntary, b);
-            }
-            else if (voluntary)
+            if (voluntary)
                 Say(Animations.GetData().Mess_Voluntary, b);
             else
+            {
+                bool notices = Regression.config.AlwaysNoticeAccidents || (double)b.bowelContinence + 0.5 > Regression.rnd.NextDouble();
+                if (!notices) return;
+
                 Say(Animations.GetData().Mess_Accident, b);
+            }
 
-            //Animations.GetWho().forceCanMove();
-            //Animations.GetWho().completelyStopAnimatingOrDoingAction();
             Animations.GetWho().jitterStrength = 1.0f;
-            Game1.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite("TileSheets\\animations", new Microsoft.Xna.Framework.Rectangle(192, 1152, Game1.tileSize, Game1.tileSize), 50f, 4, 0, Animations.GetWho().position.Value - new Vector2(((Character)Animations.GetWho()).facingDirection.Value == 1 ? 0.0f : (float)-Game1.tileSize, (float)(Game1.tileSize * 2)), false, ((Character)Animations.GetWho()).facingDirection.Value == 1, (float)((Character)Animations.GetWho()).StandingPixel.Y / 10000f, 0.01f, Microsoft.Xna.Framework.Color.White, 1f, 0.0f, 0.0f, 0.0f, false));
-
             Animations.GetWho().freezePause = poopAnimationTime;
             Animations.GetWho().canMove = false;
             Animations.GetWho().doEmote(12, false);
         }
-        public static void AnimateMessingEnd(Body b)
-        {
 
-            if (b.IsFishing()) return;
+        public static void AnimatePoo(Body b)
+        {
+            if (b.IsFishing() || !Animations.GetWho().canMove) return;
+
+            Game1.playSound("slosh");
+            if (b.InToilet())
+                Say(Animations.GetData().Poop_Toilet, b);
+            else
+            {
+                Say(Animations.GetData().Poop_Voluntary, b);
+                MessTerrain();
+            }
+
+            Animations.GetWho().jitterStrength = 1.0f;
+            Animations.GetWho().freezePause = poopAnimationTime;
+            Animations.GetWho().canMove = false;
+            Animations.GetWho().doEmote(12, false);
+        }
+
+        private static void MessTerrain()
+        {
             Game1.playSound("coin");
-            Game1.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite("TileSheets\\animations", new Microsoft.Xna.Framework.Rectangle(192, 1152, Game1.tileSize, Game1.tileSize), 50f, 4, 0, Animations.GetWho().position.Value - new Vector2(Animations.GetWho().facingDirection.Value == 1 ? 0.0f : -Game1.tileSize, Game1.tileSize * 2), false, Animations.GetWho().facingDirection.Value == 1, Animations.GetWho().StandingPixel.Y / 10000f, 0.01f, Microsoft.Xna.Framework.Color.White, 1f, 0.0f, 0.0f, 0.0f, false));
+            Game1.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite("TileSheets\\animations", new Microsoft.Xna.Framework.Rectangle(192, 1152, Game1.tileSize, Game1.tileSize), 50f, 4, 0, Animations.GetWho().position.Value - new Vector2(((Character)Animations.GetWho()).facingDirection.Value == 1 ? 0.0f : (float)-Game1.tileSize, (float)(Game1.tileSize * 2)), false, ((Character)Animations.GetWho()).facingDirection.Value == 1, (float)((Character)Animations.GetWho()).StandingPixel.Y / 10000f, 0.01f, Microsoft.Xna.Framework.Color.White, 1f, 0.0f, 0.0f, 0.0f, false));
         }
 
         public static void AnimateWetting(Body b, bool voluntary)
@@ -275,11 +280,10 @@ namespace PrimevalTitmouse
                 Say(Animations.GetData().Pee_Attempt, b);
         }
 
-        public static void AnimatePoopAttempt(Body b, bool inUnderwear)
+        public static void AnimatePoopAttempt(Body b, Container container)
         {
-
             if (b.IsFishing()) return;
-            if (inUnderwear)
+            if (!container.removable)
                 Animations.Say(Animations.GetData().Mess_Attempt, b);
             else if (b.InToilet())
                 Animations.Say(Animations.GetData().Poop_Toilet_Attempt, b);

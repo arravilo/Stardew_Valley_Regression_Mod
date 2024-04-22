@@ -311,7 +311,7 @@ namespace PrimevalTitmouse
                         body.PeeOnPurpose();
                         break;
                     case SButton.F2:
-                        body.Mess(true, false);
+                        body.PoopOnPurpose();
                         break;
                     case SButton.F5:
                         Animations.CheckUnderwear(body);

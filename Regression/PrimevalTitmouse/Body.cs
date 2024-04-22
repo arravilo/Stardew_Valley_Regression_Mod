@@ -152,7 +152,7 @@ namespace PrimevalTitmouse
             //Did we go over? Then have an accident.
             if (bowelFullness >= maxBowelCapacity)
             {
-                Mess(voluntary: false, inUnderwear: true);
+                MessIntoUnderwear(false);
             }
             else
             {
@@ -375,103 +375,114 @@ namespace PrimevalTitmouse
             return Game1.currentLocation is FarmHouse || Game1.currentLocation is JojaMart || Game1.currentLocation is Club || Game1.currentLocation is MovieTheater || Game1.currentLocation is IslandFarmHouse || Game1.currentLocation.Name == "Saloon" || Game1.currentLocation.Name == "Hospital" || Game1.currentLocation.Name == "BathHouse_MensLocker" || Game1.currentLocation.Name == "BathHouse_WomensLocker";
         }
 
-        public void Mess(bool voluntary = false, bool inUnderwear = true)
-        {
-            numPottyPooAtNight = 0;
-            numAccidentPooAtNight = 0;
-            //If we're sleeping check if we have an accident or get up to use the potty
-            if (isSleeping)
-            {
-                //When we're sleeping, our bowel fullness can exceed our capacity since we calculate for the whole night at once
-                //Hehehe, this may be evil, but with a smaller bladder, you'll have to pee multiple times a night
-                //So roll the dice each time >:)
-                //<TODO>: Give stamina penalty every time you get up to go potty. Since you disrupted sleep.
-                int numMesses = (int)(bowelFullness / maxBowelCapacity);
-                int numAccidents = 0;
-                int numPotty = 0;
-
-                for (int i = 0; i < numMesses; i++)
-                {
-                    //Randomly decide if we get up. Less likely if we have lower continence
-                    bool lclVoluntary = voluntary || Regression.rnd.NextDouble() < (double)this.bowelContinence;
-                    if (!lclVoluntary)
-                    {
-                        numAccidents++;
-                        //Any overage in the container, add to the pants. Ignore overage over that.
-                        //When sleeping, the pants are actually the bed
-                        _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(maxBowelCapacity)));
-                        bowelFullness -= maxBowelCapacity;
-                    }
-                    else
-                    {
-                        numPotty++;
-                        bowelFullness -= maxBowelCapacity;
-                        if (!underwear.removable) //Certain underwear can't be taken off to use the toilet (ie diapers)
-                        {
-                            _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(maxBowelCapacity)));
-                            numAccidents++;
-                        }
-                    }
-                }
-                numPottyPooAtNight = numPotty;
-                numAccidentPooAtNight = numAccidents;
-            }
-            else
-            {
-                StartMessing(voluntary, inUnderwear);
-                if (bowelFullness >= GetBowelAttemptThreshold())
-                {
-                    if (inUnderwear)
-                    {
-                        _ = this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
-                    }
-                    Regression.monitor.Log("Messed, reset bowel to 0");
-                    this.bowelFullness = 0.0f;
-                }
-            }
-            Regression.monitor.Log(string.Format("bladderFullnes after mess {0}", bowelFullness));
-        }
-
-        public void StartMessing(bool voluntary = false, bool inUnderwear = true)
+        private void MessIntoUnderwear(bool voluntary)
         {
             if (!Regression.config.Messing)
                 return;
 
+            //If we're sleeping check if we have an accident or get up to use the potty
+            if (isSleeping)
+            {
+                PooWhileSleep();
+                return;
+            }
+
+            /* - Wearing a non-removable underwear will have you go in it, and not win any continence.
+             * voluntary => without loss of continence 
+             * !voluntary => without loss of continence
+             */
+            if (!voluntary)
+                this.ChangeBowelContinence(0.01f * Regression.config.BowelLossContinenceRate);
+
+            this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
+            this.bowelFullness = 0.0f;
+
+            Animations.AnimateMessing(this, voluntary);
+
+            bool overflow = pants.wetness > 0.0;
+            Animations.HandleVillagersInUnderwear(this, true, overflow);
+            if (overflow)
+                HandlePoopOverflow();
+        }
+
+        private void PooWhileSleep()
+        {
+            //When we're sleeping, our bowel fullness can exceed our capacity since we calculate for the whole night at once
+            //Hehehe, this may be evil, but with a smaller bladder, you'll have to pee multiple times a night
+            //So roll the dice each time >:)
+            //<TODO>: Give stamina penalty every time you get up to go potty. Since you disrupted sleep.
+            int numMesses = (int)(bowelFullness / maxBowelCapacity);
+            int numAccidents = 0;
+            int numPotty = 0;
+
+            for (int i = 0; i < numMesses; i++)
+            {
+                //Randomly decide if we get up. Less likely if we have lower continence
+                bool lclVoluntary = Regression.rnd.NextDouble() < (double)this.bowelContinence;
+                if (!lclVoluntary)
+                {
+                    numAccidents++;
+                    //Any overage in the container, add to the pants. Ignore overage over that.
+                    //When sleeping, the pants are actually the bed
+                    _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(maxBowelCapacity)));
+                    bowelFullness -= maxBowelCapacity;
+                }
+                else
+                {
+                    numPotty++;
+                    bowelFullness -= maxBowelCapacity;
+                    if (!underwear.removable) //Certain underwear can't be taken off to use the toilet (ie diapers)
+                    {
+                        _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(maxBowelCapacity)));
+                        numAccidents++;
+                    }
+                }
+            }
+            numPottyPooAtNight = numPotty;
+            numAccidentPooAtNight = numAccidents;
+        }
+
+        public void PoopOnPurpose()
+        {
+            if (!Regression.config.Messing)
+                return;
+
+            // - Performing it too early, will show a message that you still can't pee/poop.
             if (bowelFullness < GetBowelAttemptThreshold())
             {
-                Animations.AnimatePoopAttempt(this, inUnderwear);
+                Animations.AnimatePoopAttempt(this, this.underwear);
+                return;
             }
-            else
+
+            /* - Wearing a non-removable underwear will have you go in it, and not win any continence.
+             * voluntary
+             *   removable => win continence
+             *      toilet => {}
+             *      !toilet => everyone notices
+             *   !removable => into underwear, without loss of continence 
+             * !voluntary => into underwear, with loss of continence
+             */
+            if (!this.underwear.removable)
             {
-
-                //If we have an accident (not voluntary), decrease continence
-                //If we use the potty before we REALLY have to go (we go before we reach some threshold), increase continence
-                //Otherwise, if it is voluntary but waited until we almost had an accident (fullness above some threshold) don't change anything
-                if (!voluntary)
-                    this.ChangeBowelContinence(0.01f * Regression.config.BowelLossContinenceRate);
-                else {
-                    float bowelPct = bowelFullness / maxBowelCapacity;
-                    this.ChangeBowelContinence(-0.02f * bowelPct * Regression.config.BowelGainContinenceRate);
-                }
-
-                Animations.AnimateMessingStart(this, voluntary, inUnderwear);
+                this.MessIntoUnderwear(true);
+                return;
             }
 
-            Animations.AnimateMessingEnd(this);
+            /*
+             * - You will get continence back based on how close to full you are: The longer
+             *   you hold it, the more continence you win, but you risk on having an accident
+             *   and losing continence.
+             */
+            float bowelPct = bowelFullness / GetBladderCapacity();
+            this.ChangeBladderContinence(-0.02f * bowelPct * Regression.config.BowelGainContinenceRate);
+
+            Animations.AnimatePoo(this);
+
+            // - If done outside those areas, it's like you do it in public, where others might notice.
             if (!this.InToilet())
-            {
-                if (inUnderwear)
-                {
-                    Animations.HandleVillagersInUnderwear(this, true, pants.messiness > 0.0);
-                }else
-                {
-                    Animations.HandleVillagersInPublic(this, true);
-                }
-            }
-            if (pants.messiness > 0.0 && inUnderwear)
-            {
-                HandlePoopOverflow();
-            }
+                Animations.HandleVillagersInPublic(this, true);
+
+            this.bowelFullness = 0.0f;
         }
 
         private void HandlePoopOverflow()
@@ -518,7 +529,6 @@ namespace PrimevalTitmouse
             Game1.player.applyBuff(buff);
         }
 
-
         private void WetIntoUnderwear(bool voluntary)
         {
             if (!Regression.config.Wetting)
@@ -536,16 +546,14 @@ namespace PrimevalTitmouse
             if (!voluntary)
                 this.ChangeBladderContinence(0.01f * Regression.config.BladderLossContinenceRate);
 
+            this.pants.AddPee(this.underwear.AddPee(bladderFullness));
+            this.bladderFullness = 0.0f;
             Animations.AnimateWetting(this, voluntary);
 
-            this.pants.AddPee(this.underwear.AddPee(bladderFullness));
             bool overflow = pants.wetness > 0.0;
             Animations.HandleVillagersInUnderwear(this, false, overflow);
             if (overflow)
                 HandlePeeOverflow();
-
-            this.bladderFullness = 0.0f;
-            Regression.monitor.Log(string.Format("bladderFullnes after wet {0}", bladderFullness));
         }
 
         private void PeeWhileSleep()
