@@ -308,10 +308,7 @@ namespace PrimevalTitmouse
                 switch (e.Button)
                 {
                     case SButton.F1:
-                        body.PeeOnPurpose();
-                        break;
-                    case SButton.F2:
-                        body.PoopOnPurpose();
+                        body.PeeAndPoopOnPurpose();
                         break;
                     case SButton.F5:
                         Animations.CheckUnderwear(body);

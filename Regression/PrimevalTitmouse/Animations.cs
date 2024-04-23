@@ -136,25 +136,6 @@ namespace PrimevalTitmouse
             Animations.GetWho().doEmote(12, false);
         }
 
-        public static void AnimatePoo(Body b)
-        {
-            if (b.IsFishing() || !Animations.GetWho().canMove) return;
-
-            Game1.playSound("slosh");
-            if (b.InToilet())
-                Say(Animations.GetData().Poop_Toilet, b);
-            else
-            {
-                Say(Animations.GetData().Poop_Voluntary, b);
-                MessTerrain();
-            }
-
-            Animations.GetWho().jitterStrength = 1.0f;
-            Animations.GetWho().freezePause = poopAnimationTime;
-            Animations.GetWho().canMove = false;
-            Animations.GetWho().doEmote(12, false);
-        }
-
         private static void MessTerrain()
         {
             Game1.playSound("coin");
@@ -188,24 +169,53 @@ namespace PrimevalTitmouse
         }
 
         // Pees in toilet or outside.
-        public static void AnimatePee(Body b)
+        public static void AnimatePeePoo(Body b, bool hasPee, bool hasPoo)
         {
             if (b.IsFishing() || !Animations.GetWho().canMove) return;
 
-            Game1.playSound("wateringCan");
+            if (hasPee)
+                Game1.playSound("wateringCan");
+            if (hasPoo)
+                Game1.playSound("slosh");
 
-            if (b.InToilet())
-                Animations.Say(Animations.GetData().Pee_Toilet, b);
+            if (b.InToilet()){
+                if (hasPoo)
+                {
+                    Animations.Say(Animations.GetData().Poop_Toilet, b);
+                } else
+                {
+                    Animations.Say(Animations.GetData().Pee_Toilet, b);
+                }
+            }
             else
             {
-                Animations.Say(Animations.GetData().Pee_Voluntary, b);
-                WetTerrain();
+                if (hasPoo)
+                {
+                    Animations.Say(Animations.GetData().Poop_Voluntary, b);
+                }
+                else
+                {
+                    Animations.Say(Animations.GetData().Pee_Voluntary, b);
+                }
+
+                if (hasPee)
+                    WetTerrain();
+                if (hasPoo)
+                    MessTerrain();
             }
 
-            Animations.GetWho().jitterStrength = 0.5f;
-            Animations.GetWho().freezePause = peeAnimationTime; //milliseconds
             Animations.GetWho().canMove = false;
-            ((Character)Animations.GetWho()).doEmote(28, false);
+            if (hasPee)
+            {
+                Animations.GetWho().jitterStrength = 0.5f;
+                Animations.GetWho().freezePause = peeAnimationTime; //milliseconds
+                ((Character)Animations.GetWho()).doEmote(28, false);
+            } else
+            {
+                Animations.GetWho().jitterStrength = 1.0f;
+                Animations.GetWho().freezePause = poopAnimationTime;
+                Animations.GetWho().doEmote(12, false);
+            }
         }
 
         private static void WetTerrain()
@@ -269,7 +279,7 @@ namespace PrimevalTitmouse
             Write(toiletMsg, b);
         }
 
-        public static void AnimatePeeAttempt(Body b, Container container)
+        public static void AnimatePeePooAttempt(Body b, Container container)
         {
             if (b.IsFishing()) return;
             if (!container.removable)
@@ -278,17 +288,6 @@ namespace PrimevalTitmouse
                 Say(Animations.GetData().Pee_Toilet_Attempt, b);
             else
                 Say(Animations.GetData().Pee_Attempt, b);
-        }
-
-        public static void AnimatePoopAttempt(Body b, Container container)
-        {
-            if (b.IsFishing()) return;
-            if (!container.removable)
-                Animations.Say(Animations.GetData().Mess_Attempt, b);
-            else if (b.InToilet())
-                Animations.Say(Animations.GetData().Poop_Toilet_Attempt, b);
-            else
-                Animations.Say(Animations.GetData().Poop_Attempt, b);
         }
 
         public static void AnimateWashingUnderwear(Container c)
