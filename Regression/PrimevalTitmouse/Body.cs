@@ -23,9 +23,9 @@ namespace PrimevalTitmouse
         private static readonly float minBladderCapacity = maxBladderCapacity * 0.20f;
         private static readonly float waterToBladderConversion = 0.225f;//Only ~1/4 water becomes pee, rest is sweat etc.
 
-        //Average # of poops per day varies wildly. Let's say about 3 per day.
+        //Average # of poops per day varies wildly. Let's say about 2.5 per day.
         private static readonly float foodToBowelConversion = 0.67f;
-        private static readonly float maxBowelCapacity = (requiredCaloriesPerDay*foodToBowelConversion) / 3f;
+        private static readonly float maxBowelCapacity = (requiredCaloriesPerDay*foodToBowelConversion) / 2.5f;
 
         //Setup Thresholds and messages
         private static readonly float[] WETTING_THRESHOLDS = { 0.15f, 0.4f, 0.6f };
@@ -413,7 +413,7 @@ namespace PrimevalTitmouse
             for (int i = 0; i < numMesses; i++)
             {
                 //Randomly decide if we get up. Less likely if we have lower continence
-                bool lclVoluntary = Regression.rnd.NextDouble() < (double)this.bowelContinence;
+                bool lclVoluntary = Regression.rnd.NextDouble() < getSleepContinence(this.bowelContinence);
                 if (!lclVoluntary)
                 {
                     numAccidents++;
@@ -555,6 +555,11 @@ namespace PrimevalTitmouse
                 HandlePeeOverflow();
         }
 
+        private double getSleepContinence(float baseContinence)
+        {
+            return 1 - 2 * (1 - baseContinence);
+        }
+
         private void PeeWhileSleep()
         {
             //When we're sleeping, our bladder fullness can exceed our capacity since we calculate for the whole night at once
@@ -567,7 +572,7 @@ namespace PrimevalTitmouse
             for (int i = 0; i < numWettings; i++)
             {
                 //Randomly decide if we get up. Less likely if we have lower continence
-                bool lclVoluntary = Regression.rnd.NextDouble() < (double)this.bladderContinence;
+                bool lclVoluntary = Regression.rnd.NextDouble() < getSleepContinence(this.bladderContinence);
                 float amountToLose = GetBladderCapacity();
                 if (!lclVoluntary)
                 {

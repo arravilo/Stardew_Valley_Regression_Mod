@@ -1509,7 +1509,7 @@
       "price": 25,
       "washable": true,
       "plural": true,
-      "dryingTime": 600,
+      "dryingTime": 1000,
       "removable": true,
       "durability": 5
     },
@@ -1548,7 +1548,7 @@
       "price": 500,
       "washable": true,
       "plural": false,
-      "dryingTime": 800,
+      "dryingTime": 2400,
       "removable": true,
       "durability": 8
     },
