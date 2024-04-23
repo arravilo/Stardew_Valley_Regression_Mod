@@ -293,7 +293,7 @@ namespace PrimevalTitmouse
                  * Wet & mess commands / potty training
                  * My idea is to handle this differently:
                  * - Performing it too early, will show a message that you still can't pee/poop.
-                 * - Wearing a non-removable underwear will have you go in it, and not win any continence.
+                 * - Wearing a non-removable underwear will have you go in it.
                  * - You will get continence back based on how close to full you are: The longer
                  *   you hold it, the more continence you win, but you risk on having an accident
                  *   and losing continence.

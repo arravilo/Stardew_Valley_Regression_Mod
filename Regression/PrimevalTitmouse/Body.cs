@@ -385,12 +385,7 @@ namespace PrimevalTitmouse
                 return;
             }
 
-            /* - Wearing a non-removable underwear will have you go in it, and not win any continence.
-             * voluntary => without loss of continence 
-             * !voluntary => without loss of continence
-             */
-            if (!voluntary)
-                this.ChangeBowelContinence(0.01f * Regression.config.BowelLossContinenceRate);
+            this.ChangeBowelContinence(0.01f * Regression.config.BowelLossContinenceRate);
 
             this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
             this.bowelFullness = 0.0f;
@@ -456,13 +451,13 @@ namespace PrimevalTitmouse
                 return;
             }
 
-            /* - Wearing a non-removable underwear will have you go in it, and not win any continence.
+            /* - Wearing a non-removable underwear will have you go in it.
              * voluntary
-             *   removable => win continence
+             *   removable
              *      toilet => {}
              *      !toilet => everyone notices
-             *   !removable => into underwear, without loss of continence 
-             * !voluntary => into underwear, with loss of continence
+             *   !removable => into underwear
+             * !voluntary => into underwear
              */
             if (!this.underwear.removable)
             {
@@ -476,7 +471,10 @@ namespace PrimevalTitmouse
              *   and losing continence.
              */
             float bowelPct = bowelFullness / GetBladderCapacity();
-            this.ChangeBowelContinence(-0.02f * bowelPct * Regression.config.BowelGainContinenceRate);
+            if (bowelPct > 0.5)
+            {
+                this.ChangeBowelContinence(-0.01f * (bowelPct - 0.5f) * 2 * Regression.config.BowelGainContinenceRate);
+            }
 
             Animations.AnimatePoo(this);
 
@@ -543,12 +541,7 @@ namespace PrimevalTitmouse
                 return;
             }
 
-            /* - Wearing a non-removable underwear will have you go in it, and not win any continence.
-             * voluntary => without loss of continence 
-             * !voluntary => without loss of continence
-             */
-            if (!voluntary)
-                this.ChangeBladderContinence(0.01f * Regression.config.BladderLossContinenceRate);
+            this.ChangeBladderContinence(0.01f * Regression.config.BladderLossContinenceRate);
 
             this.pants.AddPee(this.underwear.AddPee(bladderFullness));
             this.bladderFullness = 0.0f;
@@ -612,13 +605,13 @@ namespace PrimevalTitmouse
                 return;
             }
 
-            /* - Wearing a non-removable underwear will have you go in it, and not win any continence.
+            /* - Wearing a non-removable underwear will have you go in it
              * voluntary
-             *   removable => win continence
+             *   removable
              *      toilet => {}
              *      !toilet => everyone notices
-             *   !removable => into underwear, without loss of continence 
-             * !voluntary => into underwear, with loss of continence
+             *   !removable => into underwear
+             * !voluntary => into underwear
              */
             if (!this.underwear.removable)
             {
@@ -632,7 +625,10 @@ namespace PrimevalTitmouse
              *   and losing continence.
              */
             float bladderPct = bladderFullness / GetBladderCapacity();
-            this.ChangeBladderContinence(-0.02f * bladderPct * Regression.config.BladderGainContinenceRate);
+            if (bladderPct > 0.5)
+            {
+                this.ChangeBladderContinence(-0.01f * (bladderPct - 0.5f) * 2 * Regression.config.BladderGainContinenceRate);
+            }
 
             Animations.AnimatePee(this);
 
