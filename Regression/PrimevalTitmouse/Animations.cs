@@ -113,7 +113,7 @@ namespace PrimevalTitmouse
         {
             if (b.IsFishing() || !Animations.GetWho().canMove) return;
 
-            Game1.playSound("slosh");
+            Game1.playSound("slimedead");
 
             if ((double)b.pants.messiness > (double)b.pants.containment)
             {
@@ -176,7 +176,7 @@ namespace PrimevalTitmouse
             if (hasPee)
                 Game1.playSound("wateringCan");
             if (hasPoo)
-                Game1.playSound("slosh");
+                Game1.playSound("slimedead");
 
             if (b.InToilet()){
                 if (hasPoo)
