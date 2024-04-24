@@ -35,6 +35,42 @@
 		    "LogName": "Jas",
             "Action": "Include",
             "FromFile": "Dialogue/NPCs/Jas.json"
-		},	
+		},
+        // https://github.com/Pathoschild/StardewMods/blob/stable/ContentPatcher/docs/author-guide.md#readme
+        {
+            "Action": "EditData",
+            "Target": "Data/Objects",
+            "Entries": {
+                "PottyAlarm": {
+                  "Name": "PottyAlarm",
+                  "DisplayName": "Potty Alarm",
+                  "Description": "Buzzes when the wearer is close to having an accident",
+                  "Type": "Arch",
+                  "Category": -29,
+                  "Price": 0,
+                  "Texture": null,
+                  "SpriteIndex": 435,
+                  "Edibility": -300,
+                  "IsDrink": false,
+                  "Buffs": null,
+                  "GeodeDropsDefaultItems": false,
+                  "GeodeDrops": null,
+                  "ArtifactSpotChances": null,
+                  "ExcludeFromFishingCollection": false,
+                  "ExcludeFromShippingCollection": false,
+                  "ExcludeFromRandomSale": false,
+                  "ContextTags": null,
+                  "CustomFields": null
+                }
+            }
+        },
+        // https://stardewvalleywiki.com/Modding:Recipe_data
+        {
+            "Action": "EditData",
+            "Target": "Data/CraftingRecipes",
+            "Entries": {
+                "Potty Alarm": "787 1 338 1/Home/PottyAlarm/false/default/"
+            }
+        }	
 	]
 }
