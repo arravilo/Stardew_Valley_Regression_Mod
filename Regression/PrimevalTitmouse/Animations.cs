@@ -111,8 +111,6 @@ namespace PrimevalTitmouse
 
         public static void AnimateMessing(Body b, bool voluntary)
         {
-            if (b.IsFishing() || !Animations.GetWho().canMove) return;
-
             Game1.playSound("slimedead");
 
             if ((double)b.pants.messiness > (double)b.pants.containment)
@@ -120,19 +118,22 @@ namespace PrimevalTitmouse
                 MessTerrain();
             }
 
-            if (voluntary)
-                Say(Animations.GetData().Mess_Voluntary, b);
-            else
+            if (Animations.GetWho().canMove)
             {
-                bool notices = Regression.config.AlwaysNoticeAccidents || (double)b.bowelContinence + 0.5 > Regression.rnd.NextDouble();
-                if (!notices) return;
+                if (voluntary)
+                    Say(Animations.GetData().Mess_Voluntary, b);
+                else
+                {
+                    bool notices = Regression.config.AlwaysNoticeAccidents || (double)b.bowelContinence + 0.5 > Regression.rnd.NextDouble();
+                    if (!notices) return;
 
-                Say(Animations.GetData().Mess_Accident, b);
+                    Say(Animations.GetData().Mess_Accident, b);
+                }
+
+                Animations.GetWho().jitterStrength = 1.0f;
+                Animations.GetWho().freezePause = poopAnimationTime;
+                Animations.GetWho().canMove = false;
             }
-
-            Animations.GetWho().jitterStrength = 1.0f;
-            Animations.GetWho().freezePause = poopAnimationTime;
-            Animations.GetWho().canMove = false;
             Animations.GetWho().doEmote(12, false);
         }
 
@@ -144,8 +145,6 @@ namespace PrimevalTitmouse
 
         public static void AnimateWetting(Body b, bool voluntary)
         {
-            if (b.IsFishing() || !Animations.GetWho().canMove) return;
-
             Game1.playSound("wateringCan");
 
             if ((double)b.pants.wetness > (double)b.pants.absorbency)
@@ -153,18 +152,21 @@ namespace PrimevalTitmouse
                 WetTerrain();
             }
 
-            if (voluntary)
-                Animations.Say(Animations.GetData().Wet_Voluntary, b);
-            else {
-                bool notices = Regression.config.AlwaysNoticeAccidents || (double)b.bladderContinence + 0.2 > Regression.rnd.NextDouble();
-                if (!notices) return;
 
-                Animations.Say(Animations.GetData().Wet_Accident, b);
+            if (Animations.GetWho().canMove) {
+                if (voluntary)
+                    Animations.Say(Animations.GetData().Wet_Voluntary, b);
+                else {
+                    bool notices = Regression.config.AlwaysNoticeAccidents || (double)b.bladderContinence + 0.2 > Regression.rnd.NextDouble();
+                    if (!notices) return;
+
+                    Animations.Say(Animations.GetData().Wet_Accident, b);
+                }
+
+                Animations.GetWho().jitterStrength = 0.5f;
+                Animations.GetWho().freezePause = peeAnimationTime; //milliseconds
+                Animations.GetWho().canMove = false;
             }
-
-            Animations.GetWho().jitterStrength = 0.5f;
-            Animations.GetWho().freezePause = peeAnimationTime; //milliseconds
-            Animations.GetWho().canMove = false;
             ((Character)Animations.GetWho()).doEmote(28, false);
         }
 
