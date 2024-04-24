@@ -392,7 +392,7 @@ namespace PrimevalTitmouse
                 return;
             }
 
-            this.ChangeBowelContinence(0.01f * Regression.config.BowelLossContinenceRate);
+            this.ChangeBowelContinence(0.02f * Regression.config.BowelLossContinenceRate);
 
             this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
             this.bowelFullness = 0.0f;
@@ -667,7 +667,7 @@ namespace PrimevalTitmouse
             //How long are we sleeping? (Minimum of 4 hours)
             const int timeInDay = 2400;
             const int wakeUpTime = timeInDay + 600;
-            const float sleepRate = 3.0f; //Let's say body functions change @ 1/3 speed while sleeping. Arbitrary.
+            const float sleepRate = 4.0f; //Let's say body functions change @ 1/4 speed while sleeping. Arbitrary.
             int timeSlept = wakeUpTime - bedtime; //Bedtime will never exceed passout-time of 2:00AM (2600)
             HandleTime(timeSlept / 100.0f / sleepRate);
         }
