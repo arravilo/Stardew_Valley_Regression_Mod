@@ -81,7 +81,14 @@ namespace PrimevalTitmouse
 
         public float GetBowelAttemptThreshold()
         {
-            return maxBowelCapacity * 0.1f;
+            return maxBowelCapacity * 0.4f;
+        }
+        public float GetBowelCapacity()
+        {
+            float start = GetBowelAttemptThreshold();
+            float range = maxBowelCapacity - start;
+
+            return start + range * (0.5f + bowelContinence * 0.5f);
         }
 
         public float GetHungerPercent()
@@ -96,7 +103,7 @@ namespace PrimevalTitmouse
 
         public float GetBowelPercent()
         {
-            return bowelFullness / maxBowelCapacity;
+            return bowelFullness / GetBowelCapacity();
         }
 
         public float GetBladderPercent()
@@ -144,17 +151,17 @@ namespace PrimevalTitmouse
             //Increment the current amount
             //We allow bowels to go over-full, to simulate the possibility of multiple night messes
             //This is determined by the amount of ffod you have in your system when you go to bed
-            float oldFullness = bowelFullness / maxBowelCapacity;
+            float oldFullness = bowelFullness / GetBowelCapacity();
             bowelFullness += amount;
 
             //Did we go over? Then have an accident.
-            if (bowelFullness >= maxBowelCapacity)
+            if (bowelFullness >= GetBowelCapacity())
             {
                 MessIntoUnderwear(false);
             }
             else
             {
-                float newFullness = bowelFullness / maxBowelCapacity;
+                float newFullness = bowelFullness / GetBowelCapacity();
 
                 //If we have no room left, or randomly based on our current continence level warn about how badly we need to pee
                 if ((newFullness <= 0.0 ? 1.0 : bowelContinence / (4f * newFullness)) > Regression.rnd.NextDouble())
@@ -406,7 +413,7 @@ namespace PrimevalTitmouse
             //Hehehe, this may be evil, but with a smaller bladder, you'll have to pee multiple times a night
             //So roll the dice each time >:)
             //<TODO>: Give stamina penalty every time you get up to go potty. Since you disrupted sleep.
-            int numMesses = (int)(bowelFullness / maxBowelCapacity);
+            int numMesses = (int)(bowelFullness / GetBowelCapacity());
             int numAccidents = 0;
             int numPotty = 0;
 
@@ -419,16 +426,16 @@ namespace PrimevalTitmouse
                     numAccidents++;
                     //Any overage in the container, add to the pants. Ignore overage over that.
                     //When sleeping, the pants are actually the bed
-                    _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(maxBowelCapacity)));
-                    bowelFullness -= maxBowelCapacity;
+                    _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(GetBowelCapacity())));
+                    bowelFullness -= GetBowelCapacity();
                 }
                 else
                 {
                     numPotty++;
-                    bowelFullness -= maxBowelCapacity;
+                    bowelFullness -= GetBowelCapacity();
                     if (!underwear.removable) //Certain underwear can't be taken off to use the toilet (ie diapers)
                     {
-                        _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(maxBowelCapacity)));
+                        _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(GetBowelCapacity())));
                         numAccidents++;
                     }
                 }
