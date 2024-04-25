@@ -189,6 +189,10 @@
     "Your $UNDERWEAR_NAME$ <bulges#bulge> as you openly mess yourself.",
     "You give up trying to hold it and sigh in relief as you mess your $UNDERWEAR_NAME$!"
   ],
+  "Potty_Alarm": [
+    "The potty alarm has gone for <pee&poop>! Find some place to go, quick!",
+    "The potty alarm has gone for <pee&poop>! If you don't go really soon, you'll have an accident!"
+  ],
   "Toilet_Night": [
     "You had to <pee&poop> last night, and made it to the toilet$HOW_MANY_TIMES",
     "You woke up to <pee&poop> in the potty like a big <boy/girl> last night$HOW_MANY_TIMES"

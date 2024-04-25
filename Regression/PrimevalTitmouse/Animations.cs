@@ -5,6 +5,7 @@ using StardewValley;
 using StardewValley.Characters;
 using StardewValley.GameData.Characters;
 using StardewValley.Menus;
+using StardewValley.Objects;
 using StardewValley.TerrainFeatures;
 using System;
 using System.Collections.Generic;
@@ -218,6 +219,20 @@ namespace PrimevalTitmouse
             HoeDirt terrainFeature;
             if (Animations.GetWho().currentLocation.terrainFeatures.ContainsKey(((Character)Animations.GetWho()).Tile) && (terrainFeature = Animations.GetWho().currentLocation.terrainFeatures[((Character)Animations.GetWho()).Tile] as HoeDirt) != null)
                 terrainFeature.state.Value = 1;
+        }
+
+        public static void AnimatePottyAlarm(Body b, bool isPee, bool isPoop)
+        {
+            Game1.playSound("phone");
+            Animations.GetWho().jitterStrength = 0.5f;
+            Animations.GetWho().freezePause = peeAnimationTime; //milliseconds
+            Animations.GetWho().canMove = false;
+            ((Character)Animations.GetWho()).doEmote(16, false);
+
+            Animations.Write(
+                Strings.ReplaceAndOr(Strings.RandString(Animations.GetData().Potty_Alarm), isPee, isPoop, "&"),
+                b
+            );
         }
 
         public static void AnimateMorning(Body b)

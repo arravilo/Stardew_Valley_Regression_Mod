@@ -40,6 +40,9 @@ namespace PrimevalTitmouse
         private static readonly string[][] HUNGER_MESSAGES = { Regression.t.Food_None, Regression.t.Food_Low };
         private static readonly float[] THIRST_THRESHOLDS = { 0.0f, 0.25f };
         private static readonly string[][] THIRST_MESSAGES = { Regression.t.Water_None, Regression.t.Water_Low };
+        private static readonly float ALARM_BLADDER_THRESHOLD = maxBladderCapacity * 0.05f;
+        private static readonly float ALARM_BOWEL_THRESHOLD = maxBowelCapacity * 0.033f;
+
         private static readonly string MESSY_DEBUFF = "Regression.Messy";
         private static readonly string WET_DEBUFF = "Regression.Wet";
         private static readonly int wakeUpPenalty = 4;
@@ -61,6 +64,8 @@ namespace PrimevalTitmouse
         public int numAccidentPooAtNight = 0;
         public int numAccidentPeeAtNight = 0;
         private float lastStamina = 0;
+        private bool pottyAlarmPeeTriggered = false;
+        private bool pottyAlarmPoopTriggered = false;
 
         public Body()
         {
@@ -111,6 +116,51 @@ namespace PrimevalTitmouse
             return bladderFullness / GetBladderCapacity();
         }
 
+        private void CheckPottyAlarm()
+        {
+            if (!underwear.removable) return;
+
+            float remainingBladder = GetBladderCapacity() - bladderFullness;
+            float remainingBowel = GetBowelCapacity() - bowelFullness;
+
+            bool bladderTriggers = !pottyAlarmPeeTriggered && remainingBladder < ALARM_BLADDER_THRESHOLD;
+            bool bowelTriggers = !pottyAlarmPoopTriggered && remainingBowel < ALARM_BOWEL_THRESHOLD;
+
+            // Regression.monitor.Log(string.Format("Remaining {0} {1}, {2} {3}", remainingBladder, bladderTriggers, remainingBowel, bowelTriggers));
+            if (!bladderTriggers && !bowelTriggers)
+            {
+                return;
+            }
+
+            // Increase thresholds to check for the other if it's close
+            bladderTriggers = remainingBladder < ALARM_BLADDER_THRESHOLD * 2.5;
+            bowelTriggers = remainingBowel < ALARM_BOWEL_THRESHOLD * 2.5;
+            pottyAlarmPeeTriggered = pottyAlarmPeeTriggered || bladderTriggers;
+            pottyAlarmPoopTriggered = pottyAlarmPoopTriggered || bowelTriggers;
+
+            int alarmIdx = -1;
+            for (int i = 0; i < Game1.player.Items.Count; i++)
+            {
+                if (Game1.player.Items[i] == null)
+                    continue;
+                if (Game1.player.Items[i].ItemId == "PottyAlarm")
+                {
+                    alarmIdx = i;
+                    break;
+                }
+            }
+
+            if (alarmIdx >= 0)
+            {
+                Animations.AnimatePottyAlarm(this, bladderTriggers, bowelTriggers);
+                Game1.player.Items[alarmIdx].Stack--;
+                if (Game1.player.Items[alarmIdx].Stack <= 0)
+                {
+                    Game1.player.removeItemFromInventory(Game1.player.Items[alarmIdx]);
+                }
+            }
+        }
+
         //Change current bladder value and handle warning messages
         public void AddBladder(float amount)
         {
@@ -121,7 +171,7 @@ namespace PrimevalTitmouse
             //Increment the current amount
             //We allow bladder to go over-full, to simulate the possibility of multiple night wettings
             //This is determined by the amount of water you have in your system when you go to bed
-            float oldFullness = bladderFullness / maxBladderCapacity;
+            float oldFullness = bladderFullness / GetBladderCapacity();
             bladderFullness += amount;
 
             //Did we go over? Then have an accident.
@@ -130,12 +180,16 @@ namespace PrimevalTitmouse
                 WetIntoUnderwear(false);
                 //Otherwise, calculate the new value
             } else {
-                float newFullness = bladderFullness / maxBladderCapacity;
+                float newFullness = bladderFullness / GetBladderCapacity();
 
                 //If we have no room left, or randomly based on our current continence level warn about how badly we need to pee
                 if ((newFullness <= 0.0 ? 1.0 : bladderContinence / (4f * newFullness)) > Regression.rnd.NextDouble())
                 {
                     Warn(1-oldFullness, 1-newFullness, WETTING_THRESHOLDS, WETTING_MESSAGES, false);
+                }
+                else
+                {
+                    CheckPottyAlarm();
                 }
             }
         }
@@ -167,6 +221,10 @@ namespace PrimevalTitmouse
                 if ((newFullness <= 0.0 ? 1.0 : bowelContinence / (4f * newFullness)) > Regression.rnd.NextDouble())
                 {
                     Warn(1-oldFullness, 1-newFullness, MESSING_THRESHOLDS, MESSING_MESSAGES, false);
+                }
+                else
+                {
+                    CheckPottyAlarm();
                 }
             }
         }
@@ -396,6 +454,7 @@ namespace PrimevalTitmouse
 
             this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
             this.bowelFullness = 0.0f;
+            this.pottyAlarmPoopTriggered = false;
 
             Regression.monitor.Log(string.Format("MessIntoUnderwear, underwear: {0}/{1}, pants: {2}", underwear.messiness, underwear.containment, pants.messiness));
 
@@ -477,7 +536,7 @@ namespace PrimevalTitmouse
              *   you hold it, the more continence you win, but you risk on having an accident
              *   and losing continence.
              */
-            float bowelPct = bowelFullness / GetBladderCapacity();
+            float bowelPct = bowelFullness / GetBowelCapacity();
             if (bowelPct > 0.5)
             {
                 this.ChangeBowelContinence(-0.01f * (bowelPct - 0.5f) * 2 * Regression.config.BowelGainContinenceRate);
@@ -490,6 +549,7 @@ namespace PrimevalTitmouse
                 Animations.HandleVillagersInPublic(this, true);
 
             this.bowelFullness = 0.0f;
+            this.pottyAlarmPoopTriggered = false;
 
             Regression.monitor.Log(string.Format("PoopOnPurpose, underwear: {0}/{1}, pants: {2}", underwear.messiness, underwear.containment, pants.messiness));
         }
@@ -552,6 +612,7 @@ namespace PrimevalTitmouse
 
             this.pants.AddPee(this.underwear.AddPee(bladderFullness));
             this.bladderFullness = 0.0f;
+            this.pottyAlarmPeeTriggered = false;
             Regression.monitor.Log(string.Format("WetIntoUnderwear, underwear: {0}/{1}, pants: {2}", underwear.wetness, underwear.absorbency, pants.wetness));
 
             Animations.AnimateWetting(this, voluntary);
@@ -649,6 +710,7 @@ namespace PrimevalTitmouse
                 Animations.HandleVillagersInPublic(this, false);
 
             this.bladderFullness = 0.0f;
+            this.pottyAlarmPeeTriggered = false;
             Regression.monitor.Log(string.Format("PeeOnPurpose, underwear: {0}/{1}, pants: {2}", underwear.wetness, underwear.absorbency, pants.wetness));
         }
 

@@ -45,7 +45,7 @@
                   "Name": "PottyAlarm",
                   "DisplayName": "Potty Alarm",
                   "Description": "Buzzes when the wearer is close to having an accident",
-                  "Type": "Arch",
+                  "Type": "Basic",
                   "Category": -29,
                   "Price": 0,
                   "Texture": null,
@@ -69,7 +69,7 @@
             "Action": "EditData",
             "Target": "Data/CraftingRecipes",
             "Entries": {
-                "Potty Alarm": "787 1 338 1/Home/PottyAlarm/false/default/"
+                "Potty Alarm": "787 1 338 1/Home/PottyAlarm 50/false/default/"
             }
         }	
 	]

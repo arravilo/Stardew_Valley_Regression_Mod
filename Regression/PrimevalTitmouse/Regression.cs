@@ -10,6 +10,7 @@ using StardewValley.Tools;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using xTile.Dimensions;
 
 namespace PrimevalTitmouse
@@ -326,6 +327,67 @@ namespace PrimevalTitmouse
             }
         }
 
+        private static bool HasBatteryPack(StardewValley.Inventories.Inventory items)
+        {
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i] == null)
+                    continue;
+                if (items[i].ItemId == "787" || items[i].ItemId == "PottyAlarm") return true;
+            }
+
+            return false;
+        }
+
+        private bool ShouldChangeWeather()
+        {
+            if (body.bladderContinence != 0.05f || body.bowelContinence != 0.05f)
+            {
+                monitor.Log(string.Format("Not at minimums for changing weather {0} {1}", body.bladderContinence, body.bowelContinence));
+                return false;
+            }
+
+            if (Game1.random.NextDouble() > 0.2)
+            {
+                monitor.Log("Not lucky enough");
+                return false;
+            }
+
+            if (HasBatteryPack(Game1.player.Items))
+            {
+                monitor.Log("Player already has batteries");
+                return false;
+            }
+
+            bool hasLigntingRod = false;
+            foreach (var location in Game1.locations)
+            {
+                foreach (var obj in location.Objects.Values)
+                {
+                    if (obj is Chest chest) {
+                        if (HasBatteryPack(chest.Items))
+                        {
+                            monitor.Log("Player already has batteries in chest");
+                            return false;
+                        }
+                    }
+
+                    if (obj.ItemId == "9")
+                    {
+                        hasLigntingRod = true;
+                    }
+                }
+            }
+
+            if (!hasLigntingRod)
+            {
+                monitor.Log("Player doesn't have lightning rod");
+                return false;
+            }
+
+            return true;
+        }
+
         //A menu has been opened, figure out if we need to modify it
         private void ReceiveMenuChanged(object sender, MenuChangedEventArgs e)
         {
@@ -337,20 +399,21 @@ namespace PrimevalTitmouse
             ShopMenu currentShopMenu;
 
             //If we try to sleep, check if the bed is done drying (only matters in Hard Mode)
-            if (Game1.currentLocation is FarmHouse && (attemptToSleepMenu = e.NewMenu as DialogueBox) != null && Game1.currentLocation.lastQuestionKey == "Sleep" && !config.Easymode)
+            if (Game1.currentLocation is FarmHouse && (attemptToSleepMenu = e.NewMenu as DialogueBox) != null && attemptToSleepMenu.responses.Length == 2 && Game1.currentLocation.lastQuestionKey == "Sleep")
             {
-                //If enough time has passed, the bed has dried
-                if (body.bed.IsDrying())
+                if (ShouldChangeWeather())
                 {
-                    Response[] sleepAttemptResponses = attemptToSleepMenu.responses;
-                    if (sleepAttemptResponses.Length == 2)
-                    {
-                        Response response = sleepAttemptResponses[1];
-                        Game1.currentLocation.answerDialogue(response);
-                        Game1.currentLocation.lastQuestionKey = null;
-                        attemptToSleepMenu.closeDialogue();
-                        Animations.AnimateDryingBedding(body);
-                    }
+                    monitor.Log("Changing weather to storm");
+                    Game1.weatherForTomorrow = Game1.weather_lightning;
+                }
+
+                //If enough time has passed, the bed has dried
+                if (!config.Easymode && body.bed.IsDrying())
+                {
+                    Game1.currentLocation.answerDialogue(attemptToSleepMenu.responses[1]);
+                    Game1.currentLocation.lastQuestionKey = null;
+                    attemptToSleepMenu.closeDialogue();
+                    Animations.AnimateDryingBedding(body);
                 }
             }
             //If we're in the mailbox, handle the initial letter from Jodi that contains protection
