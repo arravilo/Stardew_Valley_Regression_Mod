@@ -183,7 +183,7 @@ namespace PrimevalTitmouse
                 float newFullness = bladderFullness / GetBladderCapacity();
 
                 //If we have no room left, or randomly based on our current continence level warn about how badly we need to pee
-                if ((newFullness <= 0.0 ? 1.0 : bladderContinence / (4f * newFullness)) > Regression.rnd.NextDouble())
+                if (bladderContinence > Regression.rnd.NextDouble())
                 {
                     Warn(1-oldFullness, 1-newFullness, WETTING_THRESHOLDS, WETTING_MESSAGES, false);
                 }
@@ -218,7 +218,7 @@ namespace PrimevalTitmouse
                 float newFullness = bowelFullness / GetBowelCapacity();
 
                 //If we have no room left, or randomly based on our current continence level warn about how badly we need to pee
-                if ((newFullness <= 0.0 ? 1.0 : bowelContinence / (4f * newFullness)) > Regression.rnd.NextDouble())
+                if (bowelContinence > Regression.rnd.NextDouble())
                 {
                     Warn(1-oldFullness, 1-newFullness, MESSING_THRESHOLDS, MESSING_MESSAGES, false);
                 }
@@ -435,7 +435,7 @@ namespace PrimevalTitmouse
 
         public bool InToilet()
         {
-            return Game1.currentLocation is FarmHouse || Game1.currentLocation is JojaMart || Game1.currentLocation is Club || Game1.currentLocation is MovieTheater || Game1.currentLocation is IslandFarmHouse || Game1.currentLocation.Name == "Saloon" || Game1.currentLocation.Name == "Hospital" || Game1.currentLocation.Name == "BathHouse_MensLocker" || Game1.currentLocation.Name == "BathHouse_WomensLocker";
+            return Game1.currentLocation is FarmHouse || Game1.currentLocation is JojaMart || Game1.currentLocation is Club || Game1.currentLocation is MovieTheater || Game1.currentLocation is IslandFarmHouse || Game1.currentLocation.Name == "Hospital" || Game1.currentLocation.Name == "BathHouse_MensLocker" || Game1.currentLocation.Name == "BathHouse_WomensLocker";
         }
 
         private void MessIntoUnderwear(bool voluntary)
