@@ -450,7 +450,7 @@ namespace PrimevalTitmouse
                 return;
             }
 
-            this.ChangeBowelContinence(0.02f * Regression.config.BowelLossContinenceRate);
+            this.ChangeBowelContinence(0.025f * Regression.config.BowelLossContinenceRate);
 
             this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
             this.bowelFullness = 0.0f;
@@ -539,7 +539,7 @@ namespace PrimevalTitmouse
             float bowelPct = bowelFullness / GetBowelCapacity();
             if (bowelPct > 0.5)
             {
-                this.ChangeBowelContinence(-0.01f * (bowelPct - 0.5f) * 2 * Regression.config.BowelGainContinenceRate);
+                this.ChangeBowelContinence(-0.013f * (bowelPct - 0.5f) * 2 * Regression.config.BowelGainContinenceRate);
             }
 
             Animations.AnimatePoo(this);
