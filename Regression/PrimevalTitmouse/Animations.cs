@@ -140,8 +140,6 @@ namespace PrimevalTitmouse
 
         public static void AnimatePoo(Body b)
         {
-            if (b.IsFishing() || !Animations.GetWho().canMove) return;
-
             Game1.playSound("slimedead");
             if (b.InToilet())
                 Say(Animations.GetData().Poop_Toilet, b);
@@ -193,8 +191,6 @@ namespace PrimevalTitmouse
         // Pees in toilet or outside.
         public static void AnimatePee(Body b)
         {
-            if (b.IsFishing() || !Animations.GetWho().canMove) return;
-
             Game1.playSound("wateringCan");
 
             if (b.InToilet())

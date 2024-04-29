@@ -179,7 +179,7 @@ namespace PrimevalTitmouse
             {
                 WetIntoUnderwear(false);
                 //Otherwise, calculate the new value
-            } else {
+            } else if(!isSleeping) {
                 float newFullness = bladderFullness / GetBladderCapacity();
 
                 //If we have no room left, or randomly based on our current continence level warn about how badly we need to pee
@@ -213,7 +213,7 @@ namespace PrimevalTitmouse
             {
                 MessIntoUnderwear(false);
             }
-            else
+            else if(!isSleeping)
             {
                 float newFullness = bowelFullness / GetBowelCapacity();
 
@@ -480,18 +480,17 @@ namespace PrimevalTitmouse
             {
                 //Randomly decide if we get up. Less likely if we have lower continence
                 bool lclVoluntary = Regression.rnd.NextDouble() < getSleepContinence(this.bowelContinence);
+                bowelFullness -= GetBowelCapacity();
                 if (!lclVoluntary)
                 {
                     numAccidents++;
                     //Any overage in the container, add to the pants. Ignore overage over that.
                     //When sleeping, the pants are actually the bed
                     _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(GetBowelCapacity())));
-                    bowelFullness -= GetBowelCapacity();
                 }
                 else
                 {
                     numPotty++;
-                    bowelFullness -= GetBowelCapacity();
                     if (!underwear.removable) //Certain underwear can't be taken off to use the toilet (ie diapers)
                     {
                         _ = this.bed.AddPoop(this.pants.AddPoop(this.underwear.AddPoop(GetBowelCapacity())));
@@ -502,7 +501,7 @@ namespace PrimevalTitmouse
             numPottyPooAtNight = numPotty;
             numAccidentPooAtNight = numAccidents;
 
-            Regression.monitor.Log(string.Format("PooWhileSleep, underwear: {0}/{1}, pants: {2}", underwear.messiness, underwear.containment, pants.messiness));
+            Regression.monitor.Log(string.Format("PooWhileSleep, accidents/potty: {3}/{4}, underwear: {0}/{1}, pants: {2}", underwear.messiness, underwear.containment, pants.messiness, numPottyPooAtNight, numAccidentPooAtNight));
         }
 
         public void PoopOnPurpose()
@@ -642,18 +641,17 @@ namespace PrimevalTitmouse
                 //Randomly decide if we get up. Less likely if we have lower continence
                 bool lclVoluntary = Regression.rnd.NextDouble() < getSleepContinence(this.bladderContinence);
                 float amountToLose = GetBladderCapacity();
+                bladderFullness -= amountToLose;
                 if (!lclVoluntary)
                 {
                     numAccidents++;
                     //Any overage in the container, add to the pants. Ignore overage over that.
                     //When sleeping, the pants are actually the bed
                     _ = this.bed.AddPee(this.pants.AddPee(this.underwear.AddPee(amountToLose)));
-                    bladderFullness -= amountToLose;
                 }
                 else
                 {
                     numPotty++;
-                    bladderFullness -= amountToLose;
                     if (!underwear.removable) //Certain underwear can't be taken off to use the toilet (ie diapers)
                     {
                         _ = this.bed.AddPee(this.pants.AddPee(this.underwear.AddPee(amountToLose)));
@@ -760,6 +758,9 @@ namespace PrimevalTitmouse
             const int wakeUpTime = timeInDay + 600;
             const float sleepRate = 4.0f; //Let's say body functions change @ 1/4 speed while sleeping. Arbitrary.
             int timeSlept = wakeUpTime - bedtime; //Bedtime will never exceed passout-time of 2:00AM (2600)
+
+            Regression.monitor.Log(string.Format("Bedtime: {0}, timeSlept: {1}", bedtime, timeSlept));
+
             HandleTime(timeSlept / 100.0f / sleepRate);
         }
 
