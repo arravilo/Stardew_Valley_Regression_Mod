@@ -501,7 +501,7 @@ namespace PrimevalTitmouse
             numPottyPooAtNight = numPotty;
             numAccidentPooAtNight = numAccidents;
 
-            Regression.monitor.Log(string.Format("PooWhileSleep, accidents/potty: {3}/{4}, underwear: {0}/{1}, pants: {2}", underwear.messiness, underwear.containment, pants.messiness, numPottyPooAtNight, numAccidentPooAtNight));
+            Regression.monitor.Log(string.Format("PooWhileSleep, accidents/potty: {3}/{4}, underwear: {0}/{1}, pants: {2}", underwear.messiness, underwear.containment, pants.messiness, numAccidentPooAtNight, numPottyPooAtNight));
         }
 
         public void PoopOnPurpose()
@@ -761,6 +761,10 @@ namespace PrimevalTitmouse
 
             Regression.monitor.Log(string.Format("Bedtime: {0}, timeSlept: {1}", bedtime, timeSlept));
 
+            numAccidentPooAtNight = 0;
+            numAccidentPeeAtNight = 0;
+            numPottyPooAtNight = 0;
+            numPottyPeeAtNight = 0;
             HandleTime(timeSlept / 100.0f / sleepRate);
         }
 
