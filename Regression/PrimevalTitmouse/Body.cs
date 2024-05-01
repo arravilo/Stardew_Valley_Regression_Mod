@@ -479,7 +479,7 @@ namespace PrimevalTitmouse
             for (int i = 0; i < numMesses; i++)
             {
                 //Randomly decide if we get up. Less likely if we have lower continence
-                bool lclVoluntary = Regression.rnd.NextDouble() < getSleepContinence(this.bowelContinence);
+                bool lclVoluntary = Regression.rnd.NextDouble() < getSleepContinence(this.bowelContinence, 1.5f);
                 bowelFullness -= GetBowelCapacity();
                 if (!lclVoluntary)
                 {
@@ -622,9 +622,9 @@ namespace PrimevalTitmouse
                 HandlePeeOverflow();
         }
 
-        private double getSleepContinence(float baseContinence)
+        private double getSleepContinence(float baseContinence, float factor)
         {
-            return 1 - 2 * (1 - baseContinence);
+            return 1 - factor * (1 - baseContinence);
         }
 
         private void PeeWhileSleep()
@@ -639,7 +639,7 @@ namespace PrimevalTitmouse
             for (int i = 0; i < numWettings; i++)
             {
                 //Randomly decide if we get up. Less likely if we have lower continence
-                bool lclVoluntary = Regression.rnd.NextDouble() < getSleepContinence(this.bladderContinence);
+                bool lclVoluntary = Regression.rnd.NextDouble() < getSleepContinence(this.bladderContinence, 2);
                 float amountToLose = GetBladderCapacity();
                 bladderFullness -= amountToLose;
                 if (!lclVoluntary)

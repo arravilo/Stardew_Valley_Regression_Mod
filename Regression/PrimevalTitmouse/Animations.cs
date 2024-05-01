@@ -271,10 +271,17 @@ namespace PrimevalTitmouse
                 {
                     toiletMsg = Strings.InsertVariable(toiletMsg, "$HOW_MANY_TIMES", ", but you still woke up$HOW_MANY_TIMES");
                 }
+
                 if (b.numAccidentPeeAtNight > 0)
-                    toiletMsg = Strings.InsertVariable(toiletMsg, "$HOW_MANY_TIMES", " wet$HOW_MANY_TIMES");
-                if (b.numAccidentPooAtNight > 0)
-                    toiletMsg = Strings.InsertVariable(toiletMsg, "$HOW_MANY_TIMES", " and messy$HOW_MANY_TIMES");
+                {
+                    if (b.numAccidentPooAtNight > 0)
+                        toiletMsg = Strings.InsertVariable(toiletMsg, "$HOW_MANY_TIMES", " wet and messy$HOW_MANY_TIMES");
+                    else
+                        toiletMsg = Strings.InsertVariable(toiletMsg, "$HOW_MANY_TIMES", " wet$HOW_MANY_TIMES");
+                }
+                else if (b.numAccidentPooAtNight > 0)
+                    toiletMsg = Strings.InsertVariable(toiletMsg, "$HOW_MANY_TIMES", " messy$HOW_MANY_TIMES");
+
                 if (b.numAccidentPooAtNight > 0 || b.numAccidentPeeAtNight > 0)
                     toiletMsg = Strings.InsertVariable(toiletMsg, "$HOW_MANY_TIMES", "! Looks like someone really does need to be in their diapers at night$HOW_MANY_TIMES");
             }
@@ -435,7 +442,7 @@ namespace PrimevalTitmouse
         private static NPC getNearbyNPC(int radius)
         {
             Regression.monitor.Log(string.Format("Find NPCs within a radius of {0}", radius));
-            if (Utility.isThereAFarmerOrCharacterWithinDistance(((Character)Animations.GetWho()).Tile, radius, (GameLocation)Game1.currentLocation) is not NPC npc || NPC_LIST.Contains(npc.Name))
+            if (Utility.isThereAFarmerOrCharacterWithinDistance(((Character)Animations.GetWho()).Tile, radius, (GameLocation)Game1.currentLocation) is not NPC npc || NPC_LIST.Contains(npc.Name) || npc.IsMonster)
                 return null;
             Regression.monitor.Log(string.Format("Found {0}", npc.Name));
             return npc;
