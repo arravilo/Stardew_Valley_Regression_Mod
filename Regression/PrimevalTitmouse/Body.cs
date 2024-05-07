@@ -30,7 +30,7 @@ namespace PrimevalTitmouse
         //Setup Thresholds and messages
         private static readonly float[] WETTING_THRESHOLDS = { 0.15f, 0.4f, 0.6f };
         private static readonly string[][] WETTING_MESSAGES = { Regression.t.Bladder_Red, Regression.t.Bladder_Orange, Regression.t.Bladder_Yellow };
-        private static readonly float[] MESSING_THRESHOLDS = { 0.15f, 0.4f, 0.6f };
+        private static readonly float[] MESSING_THRESHOLDS = { 0.2f, 0.4f, 0.6f };
         private static readonly string[][] MESSING_MESSAGES = { Regression.t.Bowels_Red, Regression.t.Bowels_Orange, Regression.t.Bowels_Yellow };
         private static readonly float[] BLADDER_CONTINENCE_THRESHOLDS = { 0.2f, 0.5f, 0.6f, 0.8f };
         private static readonly string[][] BLADDER_CONTINENCE_MESSAGES = { Regression.t.Bladder_Continence_Min, Regression.t.Bladder_Continence_Red, Regression.t.Bladder_Continence_Orange, Regression.t.Bladder_Continence_Yellow };
@@ -450,7 +450,7 @@ namespace PrimevalTitmouse
                 return;
             }
 
-            this.ChangeBowelContinence(0.025f * Regression.config.BowelLossContinenceRate);
+            this.ChangeBowelContinence(0.02f * (bowelFullness / maxBowelCapacity) * Regression.config.BowelLossContinenceRate);
 
             this.pants.AddPoop(this.underwear.AddPoop(bowelFullness));
             this.bowelFullness = 0.0f;
@@ -535,11 +535,7 @@ namespace PrimevalTitmouse
              *   you hold it, the more continence you win, but you risk on having an accident
              *   and losing continence.
              */
-            float bowelPct = bowelFullness / GetBowelCapacity();
-            if (bowelPct > 0.5)
-            {
-                this.ChangeBowelContinence(-0.013f * (bowelPct - 0.5f) * 2 * Regression.config.BowelGainContinenceRate);
-            }
+            this.ChangeBowelContinence(-0.02f * (bowelFullness / maxBowelCapacity) * Regression.config.BowelGainContinenceRate);
 
             Animations.AnimatePoo(this);
 
@@ -607,7 +603,7 @@ namespace PrimevalTitmouse
                 return;
             }
 
-            this.ChangeBladderContinence(0.01f * Regression.config.BladderLossContinenceRate);
+            this.ChangeBladderContinence(0.03f * (bladderFullness / maxBladderCapacity) * Regression.config.BladderLossContinenceRate);
 
             this.pants.AddPee(this.underwear.AddPee(bladderFullness));
             this.bladderFullness = 0.0f;
@@ -695,11 +691,7 @@ namespace PrimevalTitmouse
              *   you hold it, the more continence you win, but you risk on having an accident
              *   and losing continence.
              */
-            float bladderPct = bladderFullness / GetBladderCapacity();
-            if (bladderPct > 0.5)
-            {
-                this.ChangeBladderContinence(-0.01f * (bladderPct - 0.5f) * 2 * Regression.config.BladderGainContinenceRate);
-            }
+            this.ChangeBladderContinence(-0.03f * (bladderFullness / maxBladderCapacity) * Regression.config.BladderGainContinenceRate);
 
             Animations.AnimatePee(this);
 
