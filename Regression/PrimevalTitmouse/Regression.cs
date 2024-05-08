@@ -1,5 +1,7 @@
-﻿using Microsoft.Xna.Framework;
+﻿using HarmonyLib;
+using Microsoft.Xna.Framework;
 using Regression;
+using Regression.PrimevalTitmouse;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -46,6 +48,21 @@ namespace PrimevalTitmouse
             h.Events.Input.ButtonPressed += new EventHandler<ButtonPressedEventArgs>(ReceiveMouseChanged);
             h.Events.Display.MenuChanged += new EventHandler<MenuChangedEventArgs>(ReceiveMenuChanged);
             h.Events.Display.RenderingHud += new EventHandler<RenderingHudEventArgs>(ReceivePreRenderHudEvent);
+
+            try
+            {
+                ObjectPatches.Initialize(monitor);
+                var harmony = new Harmony(this.ModManifest.UniqueID);
+                monitor.Log(nameof(ObjectPatches.Debris__findBestPlayer));
+                harmony.Patch(
+                    original: AccessTools.Method(typeof(StardewValley.Debris), "findBestPlayer"),
+                    prefix: new HarmonyMethod(typeof(ObjectPatches), nameof(ObjectPatches.Debris__findBestPlayer))
+                );
+            } catch (Exception ex)
+            {
+                monitor.Log("Harmony patch failed");
+                monitor.Log(ex.Message, LogLevel.Error);
+            }
         }
 
         public void DrawStatusBars()

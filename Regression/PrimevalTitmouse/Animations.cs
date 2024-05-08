@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Regression.PrimevalTitmouse;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Characters;
@@ -14,6 +15,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace PrimevalTitmouse
 {
@@ -158,7 +160,13 @@ namespace PrimevalTitmouse
         private static void MessTerrain()
         {
             Game1.playSound("coin");
-            Game1.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite("TileSheets\\animations", new Microsoft.Xna.Framework.Rectangle(192, 1152, Game1.tileSize, Game1.tileSize), 50f, 4, 0, Animations.GetWho().position.Value - new Vector2(((Character)Animations.GetWho()).facingDirection.Value == 1 ? 0.0f : (float)-Game1.tileSize, (float)(Game1.tileSize * 2)), false, ((Character)Animations.GetWho()).facingDirection.Value == 1, (float)((Character)Animations.GetWho()).StandingPixel.Y / 10000f, 0.01f, Microsoft.Xna.Framework.Color.White, 1f, 0.0f, 0.0f, 0.0f, false));
+            var location = Game1.currentLocation;
+            var tile = Animations.GetWho().Tile;
+            var position = Animations.GetWho().position;
+            location.temporarySprites.Add(
+                new TemporaryAnimatedSprite("TileSheets\\animations", new Microsoft.Xna.Framework.Rectangle(192, 1152, Game1.tileSize, Game1.tileSize), 50f, 4, 0, position.Value - new Vector2(((Character)Animations.GetWho()).facingDirection.Value == 1 ? 0.0f : (float)-Game1.tileSize, (float)(Game1.tileSize * 2)), false, ((Character)Animations.GetWho()).facingDirection.Value == 1, (float)((Character)Animations.GetWho()).StandingPixel.Y / 10000f, 0.01f, Microsoft.Xna.Framework.Color.White, 1f, 0.0f, 0.0f, 0.0f, false));
+
+            Game1.createObjectDebris("Poop", (int)tile.X, (int)tile.Y, location);
         }
 
         public static void AnimateWetting(Body b, bool voluntary)

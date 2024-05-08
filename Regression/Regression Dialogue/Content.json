@@ -61,6 +61,27 @@
                   "ExcludeFromRandomSale": false,
                   "ContextTags": null,
                   "CustomFields": null
+                },
+                "Poop": {
+                    "Name": "Poop",
+                    "DisplayName": "Poop from a butt",
+                    "Description": "Seriously, you shouldn't have grabbed that",
+                    "Type": "Litter",
+                    "Category": -20,
+                    "Price": 0,
+                    "Texture": null,
+                    "SpriteIndex": 220,
+                    "Edibility": -300,
+                    "IsDrink": false,
+                    "Buffs": null,
+                    "GeodeDropsDefaultItems": false,
+                    "GeodeDrops": null,
+                    "ArtifactSpotChances": null,
+                    "ExcludeFromFishingCollection": false,
+                    "ExcludeFromShippingCollection": false,
+                    "ExcludeFromRandomSale": false,
+                    "ContextTags": null,
+                    "CustomFields": null
                 }
             }
         },
