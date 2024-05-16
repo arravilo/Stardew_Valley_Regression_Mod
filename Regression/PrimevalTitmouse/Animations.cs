@@ -116,7 +116,7 @@ namespace PrimevalTitmouse
         {
             Game1.playSound("slimedead");
 
-            if ((double)b.pants.messiness > (double)b.pants.containment)
+            if ((double)b.pants.messiness >= (double)b.pants.containment)
             {
                 MessTerrain();
             }
